@@ -10,6 +10,7 @@ public interface IExtension {
 	public String getUniqueIdentifier();
 
 	public String getNamespace();
+    public String getNamespaceIdentifier();
 	public String getSimpleIdentifier();
 	
 }

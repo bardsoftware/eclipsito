@@ -49,6 +49,9 @@ public class ExtensionImpl implements IExtension {
     public String getNamespace() {
         return myPluginId;
     }
+    public String getNamespaceIdentifier() {
+        return myPluginId;
+    }
 
     public String toString() {
         return "extension: " + getUniqueIdentifier() + " point=" + myExtensionPointId;

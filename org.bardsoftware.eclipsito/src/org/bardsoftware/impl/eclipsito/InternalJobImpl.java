@@ -7,7 +7,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 
 public abstract class InternalJobImpl {
-    private static final JobManagerImpl ourManager = JobManagerImpl.getInstance();
+    protected static final JobManagerImpl ourManager = JobManagerImpl.getInstance();
     private IProgressMonitor myMonitor;
     private int myTicks;
 

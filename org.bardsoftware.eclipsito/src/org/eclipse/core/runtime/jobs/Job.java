@@ -6,27 +6,38 @@ package org.eclipse.core.runtime.jobs;
 import org.bardsoftware.impl.eclipsito.InternalJobImpl;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-;
 
 public abstract class Job extends InternalJobImpl {
+    /**
+     * Returns the job manager.
+     * 
+     * @return the job manager
+     * @since org.eclipse.core.jobs 3.2
+     */
+    public static final IJobManager getJobManager() {
+        return ourManager;
+    }
+    
     public Job(String name) {
         
     }
+
     /**
      * Executes this job.  Returns the result of the execution.
      * <p>
      * The provided monitor can be used to report progress and respond to 
      * cancellation.  If the progress monitor has been canceled, the job
      * should finish its execution at the earliest convenience and return a result
-     * status of severity <code>IStatus.CANCEL</code>.  The singleton
-     * cancel status <code>Status.CANCEL_STATUS</code> can be used for
-     * this purpose.
+     * status of severity {@link IStatus#CANCEL}.  The singleton
+     * cancel status {@link Status#CANCEL_STATUS} can be used for
+     * this purpose.  The monitor is only valid for the duration of the invocation
+     * of this method.
      * <p>
      * This method must not be called directly by clients.  Clients should call
      * <code>schedule</code>, which will in turn cause this method to be called.
      * <p>
      * Jobs can optionally finish their execution asynchronously (in another thread) by 
-     * returning a result status of <code>Job.ASYNC_FINISH</code>.  Jobs that finish
+     * returning a result status of {@link #ASYNC_FINISH}.  Jobs that finish
      * asynchronously <b>must</b> specify the execution thread by calling
      * <code>setThread</code>, and must indicate when they are finished by calling
      * the method <code>done</code>.
