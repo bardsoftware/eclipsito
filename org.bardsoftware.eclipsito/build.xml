@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="jar" name="eclipsito">
+    <target name="init">
+        <mkdir dir="bin"/>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="init" name="build">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac destdir="bin" source="1.5" target="1.5" debug="true"
+               srcdir="src"
+               excludes="org/bardsoftware/test/**">
+        </javac>
+    </target>    
+	
+	<target depends="build" name="jar">
+      <jar destfile="eclipsito.jar" basedir="bin" compress="yes"/>
+	</target>
+</project>
