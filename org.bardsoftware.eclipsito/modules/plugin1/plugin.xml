@@ -1,0 +1,7 @@
+<plugin 
+    id="plugin1" 
+    name="plugin1" 
+    version="1.0" 
+    class="org.bardsoftware.test.eclipsito.dependencies.Plugin1class">
+ 
+</plugin>

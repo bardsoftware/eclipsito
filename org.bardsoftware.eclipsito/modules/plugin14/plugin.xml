@@ -1,0 +1,18 @@
+<plugin 
+    id="plugin14" 
+    name="plugin14" 
+    version="1.0">
+
+   <extension point="plugin13.point1" id="good">
+        <configelement number="1" />
+        <configelement number="2" />
+   </extension>
+
+   <extension point="plugin14" id="broken">
+	<configelement number="0">
+             <configelement number="00">
+             </configelement>
+        </configelement>
+   </extension>
+
+</plugin>

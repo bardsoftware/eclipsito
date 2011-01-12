@@ -1,0 +1,11 @@
+<plugin 
+    id="plugin10" 
+    name="plugin10" 
+    version="1.0" 
+    class="org.bardsoftware.test.eclipsito.dependencies.Plugin10class">
+
+   <requires>
+      <import plugin="x"/>
+   </requires>
+
+</plugin>

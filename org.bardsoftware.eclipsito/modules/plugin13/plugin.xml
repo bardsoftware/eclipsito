@@ -1,0 +1,8 @@
+<plugin 
+    id="plugin13" 
+    name="plugin13" 
+    version="1.0">
+
+   <extension-point id="point1" name="name"/>
+
+</plugin>

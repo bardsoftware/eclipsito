@@ -1,0 +1,16 @@
+<plugin 
+    id="plugin15" 
+    name="plugin15" 
+    version="1.0">
+
+   <requires>
+      <import plugin="x"/> <!-- this will make plugin broken //-->
+   </requires>
+
+   <extension-point id="point1" name="name"/>
+
+   <extension point="plugin15.point1" id="brokenPlugin"/>
+
+   <extension point="plugin13.point1" id="goodPlugin"/>
+
+</plugin>
