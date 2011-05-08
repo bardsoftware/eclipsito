@@ -3,30 +3,29 @@ package org.bardsoftware.impl.eclipsito;
 import java.io.File;
 import java.io.FileFilter;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class ModulesDirectoryProcessor {
 
-    public static PluginDescriptor[] process(final URI modulesdirUri, final String descriptorPattern) {
+    public static PluginDescriptor[] process(final URL modulesdirUri, final String descriptorPattern) {
         return processDescriptors(findModuleDescriptors(modulesdirUri, descriptorPattern));
     }
-    
+
     protected static PluginDescriptor[] processDescriptors(URL[] moduleDescriptorUris) {
-        ArrayList result = new ArrayList();
+        ArrayList<PluginDescriptor> result = new ArrayList<PluginDescriptor>();
         for (int i = 0; i < moduleDescriptorUris.length; i++) {
             PluginDescriptor pluginDescriptor = DescriptorParser.parse(moduleDescriptorUris[i]);
             if (pluginDescriptor != null) {
                 result.add(pluginDescriptor);
             }
         }
-		return (PluginDescriptor[]) result.toArray(new PluginDescriptor[result.size()]);
+        return (PluginDescriptor[]) result.toArray(new PluginDescriptor[result.size()]);
     }
-    
-    protected static URL[] findModuleDescriptors(final URI modulesdirUri, final String descriptorPattern) {
-        ArrayList result = new ArrayList();
+
+    protected static URL[] findModuleDescriptors(final URL modulesdirUri, final String descriptorPattern) {
+        ArrayList<URL> result = new ArrayList<URL>();
         File[] directories = findSubdirectories(modulesdirUri);
         for (int i = 0; descriptorPattern != null && i < directories.length; i++) {
             File descriptorFile = new File(directories[i], descriptorPattern);
@@ -39,10 +38,10 @@ public class ModulesDirectoryProcessor {
                 }
             }
         }
-		return (URL[]) result.toArray(new URL[result.size()]);
+        return (URL[]) result.toArray(new URL[result.size()]);
     }
-    
-    private static File[] findSubdirectories(URI rootUri) {
+
+    private static File[] findSubdirectories(URL rootUri) {
         File[] result = new File(rootUri.getPath()).listFiles(new FileFilter() {
             public boolean accept(File pathname) {
                 return pathname.isDirectory();

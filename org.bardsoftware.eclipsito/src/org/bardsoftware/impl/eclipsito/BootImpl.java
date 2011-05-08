@@ -13,13 +13,13 @@ public class BootImpl extends Boot {
     private static final String ATTRIBUTE_MODULES_DIRECTORY = "modules-directory";
     private static final String ATTRIBUTE_DESCRIPTOR_FILE_PATTERN = "descriptor-file-pattern";
     private static final String ATTRIBUTE_APPLICATION = "application";
-    
+
     private static final ThreadGroup topThreadGroup = new ThreadGroup("TopThreadGroup") {
         public void uncaughtException(Thread t, Throwable e) {
             Boot.LOG.log(Level.WARNING, "[uncaughtException]" + e, e);
         }
     };
-    
+
     private PlatformImpl myPlatform;
 
     public void run(final Document config, final URI home, final String[] args) {
@@ -29,32 +29,33 @@ public class BootImpl extends Boot {
 
         final String application = config.getDocumentElement().getAttribute(ATTRIBUTE_APPLICATION);
         PluginDescriptor[] plugins = getPlugins(config, home);
-		run(plugins, application, args);
-		// start all bundles to let them initialize their services,
-		// this should be done before an application is started
+        run(plugins, application, args);
+        // start all bundles to let them initialize their services,
+        // this should be done before an application is started
     }
 
     protected PluginDescriptor[] getPlugins(Document config, URI home) {
         String modulesdir = config.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_DIRECTORY);
         String descriptorPattern = config.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
-        URI modulesUrl = home.resolve(modulesdir);
+        URL modulesUrl = getClass().getResource(modulesdir);
+        Boot.LOG.info("Searching for plugins in " + modulesUrl.getPath());
         PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(modulesUrl, descriptorPattern);
         return plugins;
-        
+
     }
     public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
-		myPlatform.setup(plugins);
+        myPlatform.setup(plugins);
         new Thread(topThreadGroup, "Start") {
             public void run() {
-           		myPlatform.start();
-           		// after all bundles are started up, we can
+                   myPlatform.start();
+                   // after all bundles are started up, we can
                 // launch an application which could use all supplied bundle services
                 if (application != null && application.length() > 0) {
                     ApplicationLauncher.launchApplication(application, args);
                 }
             }
         }.start();
-        
+
     }
     public void shutdown() {
         myPlatform.stop();
