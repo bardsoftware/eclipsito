@@ -2,10 +2,14 @@ package org.bardsoftware.impl.eclipsito;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import org.bardsoftware.eclipsito.Boot;
 
 public class ModulesDirectoryProcessor {
 
@@ -42,7 +46,15 @@ public class ModulesDirectoryProcessor {
     }
 
     private static File[] findSubdirectories(URL rootUri) {
-        File[] result = new File(rootUri.getPath()).listFiles(new FileFilter() {
+        String path;
+        try {
+            path = URLDecoder.decode(rootUri.getPath(), "UTF-8");
+            Boot.LOG.info("Searching for plugins in " + path);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            path = rootUri.getPath();
+        }
+        File[] result = new File(path).listFiles(new FileFilter() {
             public boolean accept(File pathname) {
                 return pathname.isDirectory();
             }

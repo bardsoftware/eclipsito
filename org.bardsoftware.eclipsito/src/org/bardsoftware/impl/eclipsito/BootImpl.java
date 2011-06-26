@@ -38,7 +38,6 @@ public class BootImpl extends Boot {
         String modulesdir = config.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_DIRECTORY);
         String descriptorPattern = config.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
         URL modulesUrl = getClass().getResource(modulesdir);
-        Boot.LOG.info("Searching for plugins in " + modulesUrl.getPath());
         PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(modulesUrl, descriptorPattern);
         return plugins;
 
