@@ -11,6 +11,12 @@ public abstract class InternalJobImpl {
     private IProgressMonitor myMonitor;
     private int myTicks;
 
+    /**
+     * Volatile because it is usually set via a Worker thread and is read via a 
+     * client thread. 
+     */
+    private volatile IStatus result;
+
     protected abstract IStatus run(IProgressMonitor progressMonitor);
 
     public void doSchedule() {
@@ -35,4 +41,11 @@ public abstract class InternalJobImpl {
         return true;
     }
     
+    protected void setResult(IStatus result) {
+        this.result = result;
+    }
+
+    protected IStatus getResult() {
+        return result;
+    }
 }

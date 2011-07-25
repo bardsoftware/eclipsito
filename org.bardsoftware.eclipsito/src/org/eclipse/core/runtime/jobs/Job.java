@@ -89,5 +89,14 @@ public abstract class Job extends InternalJobImpl {
     public final boolean cancel() {
         return super.cancel();
     }    
-    
+
+    /**
+     * Returns the result of this job's last run.
+     * 
+     * @return the result of this job's last run, or <code>null</code> if this
+     *         job has never finished running.
+     */
+    public final IStatus getResult() {
+        return super.getResult();
+    }
 }

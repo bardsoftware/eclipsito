@@ -161,6 +161,7 @@ public class JobManagerImpl implements IJobManager {
 					else {
 						InternalJobImpl next = (InternalJobImpl) myJobs.removeFirst();
 						IStatus result = next.run(myProgressMonitor);
+                        next.setResult(result);
 		                if (result.isOK()) {
 		                }
 		                else {
