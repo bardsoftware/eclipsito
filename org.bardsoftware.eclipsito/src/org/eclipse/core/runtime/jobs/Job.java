@@ -19,7 +19,7 @@ public abstract class Job extends InternalJobImpl {
     }
     
     public Job(String name) {
-        
+        super(name);
     }
 
     /**
@@ -48,6 +48,7 @@ public abstract class Job extends InternalJobImpl {
      * @see #ASYNC_FINISH
      * @see #done(IStatus)
      */
+    @Override
     protected abstract IStatus run(IProgressMonitor monitor);
 
     /**
@@ -86,9 +87,21 @@ public abstract class Job extends InternalJobImpl {
 		return false;
 	}
     
+    @Override
     public final boolean cancel() {
         return super.cancel();
     }    
+
+    /**
+     * Returns the human readable name of this job. The name is never
+     * <code>null</code>.
+     * 
+     * @return the name of this job
+     */
+    @Override
+    public final String getName() {
+        return super.getName();
+    }
 
     /**
      * Returns the result of this job's last run.
@@ -96,6 +109,7 @@ public abstract class Job extends InternalJobImpl {
      * @return the result of this job's last run, or <code>null</code> if this
      *         job has never finished running.
      */
+    @Override
     public final IStatus getResult() {
         return super.getResult();
     }

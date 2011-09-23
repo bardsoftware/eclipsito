@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.IStatus;
 public abstract class InternalJobImpl {
     protected static final JobManagerImpl ourManager = JobManagerImpl.getInstance();
     private IProgressMonitor myMonitor;
+    private String myName;
     private int myTicks;
 
     /**
@@ -19,6 +20,11 @@ public abstract class InternalJobImpl {
 
     protected abstract IStatus run(IProgressMonitor progressMonitor);
 
+    public InternalJobImpl(String name) {
+        assert name != null : "Job name is null";
+        myName = name;
+    }
+    
     public void doSchedule() {
         ourManager.doSchedule(this);
     }
@@ -30,6 +36,10 @@ public abstract class InternalJobImpl {
     
     int getTicks() {
         return myTicks;
+    }
+
+    protected String getName() {
+        return myName;
     }
     
     IProgressMonitor getProgressMonitor() {
