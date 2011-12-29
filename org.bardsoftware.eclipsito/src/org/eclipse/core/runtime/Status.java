@@ -50,6 +50,13 @@ public class Status implements IStatus {
      */
     private static final IStatus[] theEmptyStatusArray = new IStatus[0];
 
+    public Status(int severity, String pluginId, String message) {
+    	setSeverity(severity);
+    	setPlugin(pluginId);
+    	setMessage(message);
+		setCode(OK);
+		setException(null);
+    }
     /**
      * Creates a new status object.  The created status has no children.
      *
