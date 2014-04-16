@@ -17,11 +17,9 @@ import org.osgi.framework.BundleException;
 public class PlatformImpl extends Platform /*implements Bundle */ {
     private IExtensionRegistry myExtensionRegistry;
     private Bundle[] myBundles;
-    private URI myHome;
     
-    protected PlatformImpl(URI home) {
+    protected PlatformImpl() {
         setInstance(this);
-        myHome = home;
     }
 
     protected void setup(PluginDescriptor[] descriptors) {
