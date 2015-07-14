@@ -24,7 +24,7 @@ public class BootImpl extends Boot {
 
     private PlatformImpl myPlatform;
 
-    public void run(String application, String modulesDir, String descriptorPattern, List<String> args) {
+    public void run(String application, File modulesDir, String descriptorPattern, List<String> args) {
         myPlatform = new PlatformImpl();
         Boot.LOG.info("Eclipsito platform is running.");
         ShutdownHook.install();
@@ -35,23 +35,7 @@ public class BootImpl extends Boot {
         // this should be done before an application is started
     }
 
-    protected PluginDescriptor[] getPlugins(String modulesDir, String descriptorPattern) {
-      File pluginDirFile = new File(modulesDir);
-      if (!pluginDirFile.exists() || !pluginDirFile.isDirectory()) {
-        URL modulesUrl = getClass().getResource(modulesDir);
-        if (modulesUrl == null) {
-          Boot.LOG.severe("Can't find resource by path=" + modulesDir);
-          return new PluginDescriptor[0];
-        }
-        String path;
-        try {
-          path = URLDecoder.decode(modulesUrl.getPath(), "UTF-8");
-          pluginDirFile = new File(path);
-        } catch (UnsupportedEncodingException e) {
-          Boot.LOG.log(Level.SEVERE, "Can't parse plugin location=" + modulesUrl, e);
-          return new PluginDescriptor[0];
-        }
-      }
+    protected PluginDescriptor[] getPlugins(File pluginDirFile, String descriptorPattern) {
       assert pluginDirFile.exists() && pluginDirFile.isDirectory() : "Plugin directory doesn't exist or is not a directory: " + pluginDirFile;
       Boot.LOG.info("Searching for plugins in " + pluginDirFile);
       PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(pluginDirFile, descriptorPattern);

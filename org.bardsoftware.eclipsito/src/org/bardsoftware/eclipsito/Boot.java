@@ -1,55 +1,68 @@
 package org.bardsoftware.eclipsito;
 
+import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.bardsoftware.impl.eclipsito.BootImpl;
+import org.bardsoftware.impl.eclipsito.PluginDescriptor;
 import org.w3c.dom.Document;
 
 public abstract class Boot {
 
-    public abstract void run(String application, String modulesDir, String descriptorPattern, List<String> args);
+    public abstract void run(String application, File modulesFile, String descriptorPattern, List<String> args);
     public abstract void shutdown();
     
     public static final Logger LOG = Logger.getLogger(Boot.class.getName());
     
+    private static final Set<String> CMDLINE_ARGS = new HashSet<>(
+    		Arrays.asList(new String[] {"-app", "-plugins-dir", "-plugins-res", "-include"}));
     // properties
     private static final String IMPLEMENTATION_CLASSNAME = "org.bardsoftware.modules.regxp.platform-implementation.classname";
 
     // config attributes
     private static final String ATTRIBUTE_PLATFORM_CLASSNAME = "platform-classname";
     private static final String ATTRIBUTE_LOGGING_LEVEL = "logging-level";
-    private static final String ATTRIBUTE_MODULES_DIRECTORY = "modules-directory";
+    private static final String ATTRIBUTE_MODULES_RESOURCE = "modules-resource";
     private static final String ATTRIBUTE_DESCRIPTOR_FILE_PATTERN = "descriptor-file-pattern";
     private static final String ATTRIBUTE_APPLICATION = "application";
+	private static final String ATTRIBUTE_MODULES_DIR = "modules-dir";
 
     private static Boot ourInstance;
 
-    private static void parseArgs(Map<String, String> options, List<String> args) {
-      int firstArgPos = -1;
+    private static List<String> parseArgs(Map<String, String> options, List<String> args) {
+      List<String> unknownArgs = new ArrayList<>();
       for (int i = 0; i < args.size(); i++) {
         String arg = args.get(i);
         if (!arg.startsWith("-")) {
-          firstArgPos = i;
-          break;
+          unknownArgs.add(arg);
+          continue;
         }
         assert i < args.size() - 1;
-        options.put(arg, args.get(i + 1));
+        String argName = arg;
+        String argValue = args.get(i + 1);
         i++;
+        if (CMDLINE_ARGS.contains(argName)) {
+          options.put(argName, argValue);          
+        } else {
+          unknownArgs.add(argName);
+          unknownArgs.add(argValue);
+        }
         continue;
       }
-      if (firstArgPos == -1) {
-        firstArgPos = args.size();
-      }
-      args.subList(0, firstArgPos).clear();
+      return unknownArgs;
     }
     
     public static void main(String args[]) {
@@ -57,14 +70,17 @@ public abstract class Boot {
           LOG.setLevel(Level.ALL);
           Map<String, String> options = new HashMap<String, String>();
           List<String> argList = new ArrayList<String>(Arrays.asList(args));
-          parseArgs(options, argList);
+          argList = parseArgs(options, argList);
           
           String application;
-          String modulesDir;
+          String modulesResource;
+          String modulesDir = null;
           String descriptorPattern;
           String implementationClass;
           if (options.isEmpty()) {
             String configName = argList.isEmpty() ? "eclipsito-config.xml" : argList.remove(0);
+            LOG.info(String.format("No options passed to Eclipsito. Searching for config in %s", configName));
+
             URL configResource = Boot.class.getClassLoader().getResource(configName);
             if (configResource==null) {
                 throw new RuntimeException("Eclipsito configuration file="+configName+" has not been found!");
@@ -72,27 +88,56 @@ public abstract class Boot {
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(configResource.openStream());
             implementationClass = doc.getDocumentElement().getAttribute(ATTRIBUTE_PLATFORM_CLASSNAME);
             application = doc.getDocumentElement().getAttribute(ATTRIBUTE_APPLICATION);
-            modulesDir = doc.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_DIRECTORY);
+            modulesResource = doc.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_RESOURCE);
+            if (modulesResource == null || "".equals(modulesResource)) {
+              modulesDir = doc.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_DIR);
+              assert modulesDir != null && !modulesDir.isEmpty() : "Neither plugin resource nor plugin directory were specified";
+            }            
             descriptorPattern = doc.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
           } else {
             application = options.get("-app");
-            modulesDir = options.get("-plugins");
+            modulesResource = options.get("-plugins-res");
+            modulesDir = options.get("-plugins-dir");
             descriptorPattern = options.get("-include");
             if (descriptorPattern == null) {
               descriptorPattern = "plugin.xml";
             }
             implementationClass = BootImpl.class.getName();
           }
-          assert modulesDir != null : "Plugins directory not specified";
+          LOG.info(String.format("Args: -plugins-dir=%s -plugins-res=%s descriptor-pattern=%s app=%s", modulesDir, modulesResource, descriptorPattern, application));
+          File modulesFile;
+          if (modulesDir == null) {
+            assert modulesResource != null : "Plugins directory not specified";
+            modulesFile = resolveModulesResource(modulesResource);
+          } else {
+        	modulesFile = new File(modulesDir);
+          }
+          assert modulesFile != null : "Failed to find plugins directory";
+          assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
           assert application != null : "Application ID not specified";
           assert descriptorPattern != null : "Descriptor pattern not specified";
-    	    getInstance(implementationClass).run(application, modulesDir, descriptorPattern, argList);
+          getInstance(implementationClass).run(application, modulesFile, descriptorPattern, argList);
         } catch(Exception e) {
             LOG.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
-    public static Boot getInstance() {
+    private static File resolveModulesResource(String modulesResource) {
+        URL modulesUrl = Boot.class.getResource(modulesResource);
+        if (modulesUrl == null) {
+          Boot.LOG.severe("Can't resolve plugin resource=" + modulesResource);
+          return null;
+        }
+        String path;
+        try {
+          path = URLDecoder.decode(modulesUrl.getPath(), "UTF-8");
+          return new File(path);
+        } catch (UnsupportedEncodingException e) {
+          Boot.LOG.log(Level.SEVERE, "Can't parse plugin location=" + modulesUrl, e);
+          return null;
+        }
+	}
+	public static Boot getInstance() {
         return getInstance(null);
     }
     
