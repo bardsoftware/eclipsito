@@ -44,23 +44,38 @@ public abstract class Boot {
 
     private static List<String> parseArgs(Map<String, String> options, List<String> args) {
       List<String> unknownArgs = new ArrayList<>();
+      String argName = null;
       for (int i = 0; i < args.size(); i++) {
         String arg = args.get(i);
-        if (!arg.startsWith("-")) {
+        if (arg.startsWith("-")) {
+          if (argName != null) {
+	          if (CMDLINE_ARGS.contains(argName)) {
+	            options.put(argName, "");
+	          } else {
+	        	unknownArgs.add(argName);
+	          }
+          }
+          argName = arg;
+          continue;
+        }
+        if (argName == null) {
           unknownArgs.add(arg);
           continue;
         }
-        assert i < args.size() - 1;
-        String argName = arg;
-        String argValue = args.get(i + 1);
-        i++;
         if (CMDLINE_ARGS.contains(argName)) {
-          options.put(argName, argValue);          
+          options.put(argName, arg);
         } else {
           unknownArgs.add(argName);
-          unknownArgs.add(argValue);
+          unknownArgs.add(arg);
         }
-        continue;
+        argName = null;
+      }
+      if (argName != null) {
+        if (CMDLINE_ARGS.contains(argName)) {
+          options.put(argName, "");
+        } else {
+          unknownArgs.add(argName);
+        }    	  
       }
       return unknownArgs;
     }
