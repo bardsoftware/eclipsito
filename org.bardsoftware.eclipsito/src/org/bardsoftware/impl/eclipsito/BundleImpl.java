@@ -1,14 +1,5 @@
 package org.bardsoftware.impl.eclipsito;
 
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Dictionary;
-import java.util.Enumeration;
-import java.util.logging.Level;
-
 import org.bardsoftware.eclipsito.Boot;
 import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
@@ -16,6 +7,13 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
+
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.logging.Level;
 
 public class BundleImpl implements Bundle {
     private static final long ID = System.currentTimeMillis();
@@ -25,20 +23,20 @@ public class BundleImpl implements Bundle {
     private BundleActivator myPluginInstance;
     private boolean isReloaderStarted = false;
     private int myState;
-    
+
     protected BundleImpl(PluginDescriptor descriptor) {
         myDescriptor = descriptor;
         myContext = null; // sorry
         myState = INSTALLED;
     }
-    
+
     public void start() throws BundleException {
         if (getState() == INSTALLED) {
             myState = STARTING;
             myClassLoader = initializeClassLoader(myDescriptor);
             //firstTimeStartReloaderIfReloadable(true); // initialize boolean parameter from config file
             myState = RESOLVED;
-        } 
+        }
         if (getState() == RESOLVED) {
             myState = STARTING;
             if (myDescriptor.getClassName() != null && myDescriptor.getClassName().length() > 0) {
@@ -60,7 +58,7 @@ public class BundleImpl implements Bundle {
             throw new IllegalStateException("Cannot start bundle from state "+getState());
         }
     }
-    
+
     public void stop() throws BundleException {
         if (getState() == ACTIVE) {
             myState = STOPPING;
@@ -83,7 +81,7 @@ public class BundleImpl implements Bundle {
     public void uninstall() throws BundleException {
         myState = UNINSTALLED;
     }
-    
+
     public int getState() {
         return myState;
     }
@@ -139,7 +137,7 @@ public class BundleImpl implements Bundle {
     }
 
     // ignored methods, may be implemented in future
-    
+
     public void update(InputStream in) throws BundleException {
         throw new UnsupportedOperationException();
     }
@@ -159,9 +157,9 @@ public class BundleImpl implements Bundle {
     public Dictionary getHeaders(String localeString) {
         throw new UnsupportedOperationException();
     }
-    
+
     // should adapt extensions and extension points for ServiceReference?
-    
+
     public ServiceReference[] getRegisteredServices() {
         throw new UnsupportedOperationException();
     }
@@ -169,15 +167,15 @@ public class BundleImpl implements Bundle {
     public ServiceReference[] getServicesInUse() {
         throw new UnsupportedOperationException();
     }
-    
+
     //
-    
+
     protected BundleClassLoader getClassLoader() {
         return myClassLoader;
     }
-    
+
     private BundleClassLoader initializeClassLoader(PluginDescriptor descriptor) {
-        BundleClassLoader result = newClassLoader(descriptor.getRuntimeLibraries(), 
+        BundleClassLoader result = newClassLoader(descriptor.getRuntimeLibraries(),
                 this.getClass().getClassLoader());
         String[] dependencies = descriptor.getRequiredPluginIds();
         for (int i=0; dependencies != null && i<dependencies.length; i++) {
@@ -190,7 +188,7 @@ public class BundleImpl implements Bundle {
         }
         return result;
     }
-    
+
 //    private URL[] convertUriToUrl(URI[] uris) {
 //        if (uris == null) throw new IllegalArgumentException("Don't pass me null");
 //        ArrayList result = new ArrayList(uris.length);
@@ -203,7 +201,7 @@ public class BundleImpl implements Bundle {
 //        }
 //        return (URL[]) result.toArray(new URL[result.size()]);
 //    }
-  
+
     /*
     protected void firstTimeStartReloaderIfReloadable(boolean reloadable) {
         if (isReloaderStarted == false && reloadable) {
@@ -216,5 +214,5 @@ public class BundleImpl implements Bundle {
         return new BundleClassLoader(urls, parent);
     }
 
-    
+
 }
