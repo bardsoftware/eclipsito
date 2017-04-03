@@ -101,8 +101,7 @@ public class PluginDescriptor {
 
     protected void addRuntimeLibrary(String template) {
         if (template.endsWith("*")) {
-            Path path = Paths.get(template);
-            Path parent = path.getParent();
+            Path parent = Paths.get(template.substring(0, template.length()-1));
             try {
                 File descriptorDir = new File(myLocationUrl.toURI()).getParentFile();
                 File templateDir = new File(descriptorDir, parent.toString());
