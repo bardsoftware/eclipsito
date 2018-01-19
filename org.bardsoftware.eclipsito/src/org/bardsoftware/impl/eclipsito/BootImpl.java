@@ -1,18 +1,11 @@
 package org.bardsoftware.impl.eclipsito;
 
+import org.bardsoftware.eclipsito.Boot;
+
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.security.AllPermission;
-import java.security.Policy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
-
-import org.bardsoftware.eclipsito.Boot;
-import org.w3c.dom.Document;
 
 public class BootImpl extends Boot {
 
@@ -26,7 +19,7 @@ public class BootImpl extends Boot {
 
     public void run(String application, File modulesDir, String descriptorPattern, List<String> args) {
         myPlatform = new PlatformImpl();
-        Boot.LOG.info("Eclipsito platform is running.");
+        Boot.LOG.fine("Eclipsito platform is running.");
         ShutdownHook.install();
 
         PluginDescriptor[] plugins = getPlugins(modulesDir, descriptorPattern);
@@ -37,16 +30,16 @@ public class BootImpl extends Boot {
 
     protected PluginDescriptor[] getPlugins(File pluginDirFile, String descriptorPattern) {
       assert pluginDirFile.exists() && pluginDirFile.isDirectory() : "Plugin directory doesn't exist or is not a directory: " + pluginDirFile;
-      Boot.LOG.info("Searching for plugins in " + pluginDirFile);
+      Boot.LOG.fine("Searching for plugins in " + pluginDirFile);
       PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(pluginDirFile, descriptorPattern);
       return plugins;
     }
-    
+
     public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
       if (plugins.length == 0) {
         Boot.LOG.severe("No plugins found");
       }
-      Boot.LOG.info("Command line args: " + Arrays.asList(args));
+      Boot.LOG.fine("Command line args: " + Arrays.asList(args));
         myPlatform.setup(plugins);
         new Thread(topThreadGroup, "Start") {
             public void run() {
@@ -62,7 +55,7 @@ public class BootImpl extends Boot {
     }
     public void shutdown() {
         myPlatform.stop();
-        Boot.LOG.info("Eclipsito platform is shut down.");
+        Boot.LOG.fine("Eclipsito platform is shut down.");
     }
 
     private static class ShutdownHook extends Thread {

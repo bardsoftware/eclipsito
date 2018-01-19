@@ -1,21 +1,19 @@
 package org.bardsoftware.impl.eclipsito;
 
-import java.net.URI;
-import java.net.URL;
-import java.util.logging.Level;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.bardsoftware.eclipsito.Boot;
 import org.eclipse.core.runtime.IModel;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.FactoryConfigurationError;
+import javax.xml.parsers.ParserConfigurationException;
+import java.net.URL;
+import java.util.logging.Level;
+
 public class DescriptorParser {
-   
+
     private static DocumentBuilder myDocumentBuilder;
 
     static {
@@ -32,7 +30,7 @@ public class DescriptorParser {
     public static PluginDescriptor parse(URL pluginDescriptorUrl) {
         PluginDescriptor result = null;
         try {
-            System.err.println("[DescriptorParser] parse(): plugin descriptor url="+pluginDescriptorUrl);
+            Boot.LOG.fine("[DescriptorParser] parse(): plugin descriptor url="+pluginDescriptorUrl);
             Element root = myDocumentBuilder.parse(pluginDescriptorUrl.openStream()).getDocumentElement();
             result = constructPluginDescriptor(root, pluginDescriptorUrl);
         } catch (Exception e) {
@@ -70,7 +68,7 @@ public class DescriptorParser {
         pluginDescriptor.setProviderName(pluginElement.getAttribute(IModel.PLUGIN_PROVIDER));
         pluginDescriptor.setClassName(pluginElement.getAttribute(IModel.PLUGIN_CLASS));
     }
-    
+
     private static void assertAttributeIsNotEmpty(PluginDescriptor descriptor, String attribute, String attrName) {
         if("".equals(attribute.trim())) {
             throw new IllegalArgumentException("Descriptor of plugin="+descriptor.getLocation()+" is missing required attribute="+attrName);
@@ -89,7 +87,7 @@ public class DescriptorParser {
             for (int i=0; imports != null && i<imports.getLength(); i++) {
                 Element imported = (Element) imports.item(i);
                 String requiredPluginId = imported.getAttribute(IModel.PLUGIN_REQUIRES_PLUGIN);
-                // dependency for <org.eclipse.core.runtime> will be added later by default 
+                // dependency for <org.eclipse.core.runtime> will be added later by default
                 if (!IModel.PI_RUNTIME.equals(requiredPluginId)) {
                     pluginDescriptor.addRequiredPluginId(requiredPluginId);
                 }
@@ -124,15 +122,15 @@ public class DescriptorParser {
             pluginDescriptor.addExtensionPointDescriptor(uniqueIdentifier, label, schemaReference);
         }
     }
-    
+
     private static void handleExtensionElements(NodeList extensionElements, PluginDescriptor pluginDescriptor) {
         for(int i=0; extensionElements != null && i<extensionElements.getLength(); i++) {
             Element element = (Element) extensionElements.item(i);
             String label = element.getAttribute(IModel.EXTENSION_NAME);
             String id = element.getAttribute(IModel.EXTENSION_ID);
             String pointId = element.getAttribute(IModel.EXTENSION_TARGET);
-            NodeList configurationTags = element.getElementsByTagName("*"); 
+            NodeList configurationTags = element.getElementsByTagName("*");
             pluginDescriptor.addExtension(id, label, pointId, configurationTags);
         }
-    }   
+    }
 }

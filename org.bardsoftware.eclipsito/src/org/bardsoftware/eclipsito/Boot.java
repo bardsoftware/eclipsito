@@ -1,5 +1,9 @@
 package org.bardsoftware.eclipsito;
 
+import org.bardsoftware.impl.eclipsito.BootImpl;
+import org.w3c.dom.Document;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -11,24 +15,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import org.bardsoftware.impl.eclipsito.BootImpl;
-import org.bardsoftware.impl.eclipsito.PluginDescriptor;
-import org.w3c.dom.Document;
 
 public abstract class Boot {
 
     public abstract void run(String application, File modulesFile, String descriptorPattern, List<String> args);
     public abstract void shutdown();
-    
+
     public static final Logger LOG = Logger.getLogger(Boot.class.getName());
-    
+
     private static final Set<String> CMDLINE_ARGS = new HashSet<>(
-    		Arrays.asList(new String[] {"-app", "-plugins-dir", "-plugins-res", "-include"}));
+    		Arrays.asList(new String[] {"-app", "-plugins-dir", "-plugins-res", "-include", "-verbose"}));
     // properties
     private static final String IMPLEMENTATION_CLASSNAME = "org.bardsoftware.modules.regxp.platform-implementation.classname";
 
@@ -75,26 +74,40 @@ public abstract class Boot {
           options.put(argName, "");
         } else {
           unknownArgs.add(argName);
-        }    	  
+        }
       }
       return unknownArgs;
     }
-    
+
     public static void main(String args[]) {
         try {
-          LOG.setLevel(Level.ALL);
+          ConsoleHandler handler = new ConsoleHandler();
+          handler.setLevel(Level.ALL);
+          LOG.addHandler(handler);
           Map<String, String> options = new HashMap<String, String>();
           List<String> argList = new ArrayList<String>(Arrays.asList(args));
           argList = parseArgs(options, argList);
-          
+
           String application;
           String modulesResource;
           String modulesDir = null;
           String descriptorPattern;
           String implementationClass;
-          if (options.isEmpty()) {
+          if (options.containsKey("-verbose")) {
+            LOG.setLevel(Level.FINER);
+          }
+          if (options.containsKey("-plugins-res") || options.containsKey("-plugins-dir")) {
+            application = options.get("-app");
+            modulesResource = options.get("-plugins-res");
+            modulesDir = options.get("-plugins-dir");
+            descriptorPattern = options.get("-include");
+            if (descriptorPattern == null) {
+              descriptorPattern = "plugin.xml";
+            }
+            implementationClass = BootImpl.class.getName();
+          } else {
             String configName = argList.isEmpty() ? "eclipsito-config.xml" : argList.remove(0);
-            LOG.info(String.format("No options passed to Eclipsito. Searching for config in %s", configName));
+            LOG.fine(String.format("Searching for config in %s", configName));
 
             URL configResource = Boot.class.getClassLoader().getResource(configName);
             if (configResource==null) {
@@ -107,19 +120,10 @@ public abstract class Boot {
             if (modulesResource == null || "".equals(modulesResource)) {
               modulesDir = doc.getDocumentElement().getAttribute(ATTRIBUTE_MODULES_DIR);
               assert modulesDir != null && !modulesDir.isEmpty() : "Neither plugin resource nor plugin directory were specified";
-            }            
-            descriptorPattern = doc.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
-          } else {
-            application = options.get("-app");
-            modulesResource = options.get("-plugins-res");
-            modulesDir = options.get("-plugins-dir");
-            descriptorPattern = options.get("-include");
-            if (descriptorPattern == null) {
-              descriptorPattern = "plugin.xml";
             }
-            implementationClass = BootImpl.class.getName();
+            descriptorPattern = doc.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
           }
-          LOG.info(String.format("Args: -plugins-dir=%s -plugins-res=%s descriptor-pattern=%s app=%s", modulesDir, modulesResource, descriptorPattern, application));
+          LOG.fine(String.format("Args: -plugins-dir=%s -plugins-res=%s descriptor-pattern=%s app=%s", modulesDir, modulesResource, descriptorPattern, application));
           File modulesFile;
           if (modulesDir == null) {
             assert modulesResource != null : "Plugins directory not specified";
@@ -155,10 +159,10 @@ public abstract class Boot {
 	public static Boot getInstance() {
         return getInstance(null);
     }
-    
+
     public static Boot getInstance(String classname) {
         if (ourInstance == null) {
-            try {                
+            try {
                 String implClassname = classname==null ? System.getProperty(IMPLEMENTATION_CLASSNAME) : classname;
                 if (implClassname == null || implClassname.length() == 0) {
                     LOG.severe("[RegXP platform] Platform implementation is not specified. Please set system property '" +
@@ -184,5 +188,5 @@ public abstract class Boot {
     protected static void setInstance(Boot instance) {
         ourInstance = instance;
     }
-    
+
 }
