@@ -39,20 +39,30 @@ public class BootImpl extends Boot {
       return plugins;
     }
 
-  private File getVersionDir(File modulesDir){
+  private File getVersionDir(File modulesDir) {
     File versionFile = new File(modulesDir.getPath() + File.separator + "VERSION");
     String version = null;
-    try {
-      BufferedReader br = new BufferedReader(new FileReader(versionFile));
+    try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
       version = br.readLine();
-      assert version == null : "Empty version file";
     } catch (IOException e) {
       Boot.LOG.severe("No version file found");
     }
+
+    File additionalVersionFile = new File(System.getProperty("user.home") + File.separator + ".ganttproject.d" + File.separator + "plugins" + File.separator + "VERSION");
+    if (additionalVersionFile.exists()) {
+      try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
+        String additionalVersion = br.readLine();
+        if (additionalVersion != null && additionalVersion.compareTo(version) > 0) {
+          version = additionalVersion;
+        }
+      } catch (IOException e) {
+        Boot.LOG.severe("No version file found");
+      }
+    }
+    assert version != null : "Empty version file";
     File versionDir = new File(modulesDir.getPath() + File.separator + version);
     assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
     assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
-
     return versionDir;
   }
 
