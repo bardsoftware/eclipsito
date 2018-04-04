@@ -2,7 +2,10 @@ package org.bardsoftware.impl.eclipsito;
 
 import org.bardsoftware.eclipsito.Boot;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -22,7 +25,8 @@ public class BootImpl extends Boot {
         Boot.LOG.fine("Eclipsito platform is running.");
         ShutdownHook.install();
 
-        PluginDescriptor[] plugins = getPlugins(modulesDir, descriptorPattern);
+        File versionDir = getVersionDir(modulesDir);
+        PluginDescriptor[] plugins = getPlugins(versionDir, descriptorPattern);
         run(plugins, application, args.toArray(new String[args.size()]));
         // start all bundles to let them initialize their services,
         // this should be done before an application is started
@@ -34,6 +38,23 @@ public class BootImpl extends Boot {
       PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(pluginDirFile, descriptorPattern);
       return plugins;
     }
+
+  private File getVersionDir(File modulesDir){
+    File versionFile = new File(modulesDir.getPath() + File.separator + "VERSION");
+    String version = null;
+    try {
+      BufferedReader br = new BufferedReader(new FileReader(versionFile));
+      version = br.readLine();
+      assert version == null : "Empty version file";
+    } catch (IOException e) {
+      Boot.LOG.severe("No version file found");
+    }
+    File versionDir = new File(modulesDir.getPath() + File.separator + version);
+    assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
+    assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
+
+    return versionDir;
+  }
 
     public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
       if (plugins.length == 0) {
