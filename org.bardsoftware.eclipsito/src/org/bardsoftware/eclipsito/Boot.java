@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 
 public abstract class Boot {
 
-    public abstract void run(String application, File modulesFile, String descriptorPattern, List<String> args);
+    public abstract void run(String application, List<File> modulesFiles, String descriptorPattern, List<String> args);
     public abstract void shutdown();
 
     public static final Logger LOG = Logger.getLogger(Boot.class.getName());
@@ -124,38 +124,58 @@ public abstract class Boot {
             descriptorPattern = doc.getDocumentElement().getAttribute(ATTRIBUTE_DESCRIPTOR_FILE_PATTERN);
           }
           LOG.fine(String.format("Args: -plugins-dir=%s -plugins-res=%s descriptor-pattern=%s app=%s", modulesDir, modulesResource, descriptorPattern, application));
-          File modulesFile;
+
+          List<File> modulesFiles = new ArrayList<>();
           if (modulesDir == null) {
             assert modulesResource != null : "Plugins directory not specified";
-            modulesFile = resolveModulesResource(modulesResource);
+            modulesFiles.addAll(resolveModulesResource(modulesResource));
           } else {
-        	modulesFile = new File(modulesDir);
+            String[] modulesDirArray = getModulesPaths(modulesDir);
+            for (String dir : modulesDirArray) {
+              File modulesFile = new File(dir);
+              assert modulesFile != null : "Failed to find plugins directory";
+              assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
+              modulesFiles.add(modulesFile);
+            }
           }
-          assert modulesFile != null : "Failed to find plugins directory";
-          assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
           assert application != null : "Application ID not specified";
           assert descriptorPattern != null : "Descriptor pattern not specified";
-          getInstance(implementationClass).run(application, modulesFile, descriptorPattern, argList);
+          getInstance(implementationClass).run(application, modulesFiles, descriptorPattern, argList);
         } catch(Exception e) {
             LOG.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
-    private static File resolveModulesResource(String modulesResource) {
-        URL modulesUrl = Boot.class.getResource(modulesResource);
-        if (modulesUrl == null) {
-          Boot.LOG.severe("Can't resolve plugin resource=" + modulesResource);
-          return null;
-        }
-        String path;
-        try {
-          path = URLDecoder.decode(modulesUrl.getPath(), "UTF-8");
-          return new File(path);
-        } catch (UnsupportedEncodingException e) {
-          Boot.LOG.log(Level.SEVERE, "Can't parse plugin location=" + modulesUrl, e);
-          return null;
-        }
-	}
+  private static List<File> resolveModulesResource(String modulesResource) {
+    String[] modulesDirArray = getModulesPaths(modulesResource);
+    List<File> modulesResources = new ArrayList<>();
+    for (String resourceDir : modulesDirArray) {
+
+      URL modulesUrl = Boot.class.getResource(resourceDir);
+      if (modulesUrl == null) {
+        Boot.LOG.severe("Can't resolve plugin resource=" + resourceDir);
+        continue;
+      }
+      String path;
+      try {
+        path = URLDecoder.decode(modulesUrl.getPath(), "UTF-8");
+        modulesResources.add(new File(path));
+      } catch (UnsupportedEncodingException e) {
+        Boot.LOG.log(Level.SEVERE, "Can't parse plugin location=" + modulesUrl, e);
+        continue;
+      }
+    }
+    return modulesResources;
+  }
+
+  private static String[] getModulesPaths(String modules) {
+    if (modules == null) {
+      return new String[0];
+    }
+    modules = modules.replaceAll("~", System.getProperty("user.home"));
+    return modules.split(File.pathSeparator);
+  }
+
 	public static Boot getInstance() {
         return getInstance(null);
     }

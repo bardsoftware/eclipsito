@@ -20,12 +20,12 @@ public class BootImpl extends Boot {
 
     private PlatformImpl myPlatform;
 
-    public void run(String application, File modulesDir, String descriptorPattern, List<String> args) {
+    public void run(String application, List<File> modulesDirs, String descriptorPattern, List<String> args) {
         myPlatform = new PlatformImpl();
         Boot.LOG.fine("Eclipsito platform is running.");
         ShutdownHook.install();
 
-        File versionDir = getVersionDir(modulesDir);
+        File versionDir = getVersionDir(modulesDirs);
         PluginDescriptor[] plugins = getPlugins(versionDir, descriptorPattern);
         run(plugins, application, args.toArray(new String[args.size()]));
         // start all bundles to let them initialize their services,
@@ -39,31 +39,40 @@ public class BootImpl extends Boot {
       return plugins;
     }
 
-  private File getVersionDir(File modulesDir) {
-    File versionFile = new File(modulesDir.getPath() + File.separator + "VERSION");
+  public File getVersionDir(List<File> modulesDir) {
     String version = null;
-    try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
-      version = br.readLine();
-    } catch (IOException e) {
-      Boot.LOG.severe("No version file found");
-    }
-
-    File additionalVersionFile = new File(System.getProperty("user.home") + File.separator + ".ganttproject.d" + File.separator + "plugins" + File.separator + "VERSION");
-    if (additionalVersionFile.exists()) {
-      try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
-        String additionalVersion = br.readLine();
-        if (additionalVersion != null && additionalVersion.compareTo(version) > 0) {
-          version = additionalVersion;
+    String pluginsPath = null;
+    if (modulesDir != null) {
+      if (modulesDir.isEmpty()) {
+        return null;
+      }
+      for (File dir : modulesDir) {
+        String dirVersion = getVersionNumber(dir);
+        if (version == null
+                || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
+          version = dirVersion;
+          pluginsPath = dir.getPath() + File.separator + dirVersion;
         }
-      } catch (IOException e) {
-        Boot.LOG.severe("No version file found");
       }
     }
-    assert version != null : "Empty version file";
-    File versionDir = new File(modulesDir.getPath() + File.separator + version);
+    assert pluginsPath != null && version != null : "No plugin folder found";
+
+    File versionDir = new File(pluginsPath);
     assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
     assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
     return versionDir;
+  }
+
+  private String getVersionNumber(File modulesDir) {
+    File versionFile = new File(modulesDir + File.separator + "VERSION");
+    try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
+      String version = br.readLine();
+      assert version != null : "Empty version file";
+      return version;
+    } catch (IOException e) {
+      Boot.LOG.severe("No version file found");
+    }
+    return null;
   }
 
     public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
