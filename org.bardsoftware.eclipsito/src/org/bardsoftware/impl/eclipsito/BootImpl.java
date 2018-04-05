@@ -26,6 +26,7 @@ public class BootImpl extends Boot {
         ShutdownHook.install();
 
         File versionDir = getVersionDir(modulesDirs);
+        assert versionDir != null : "No plugin folder found";
         PluginDescriptor[] plugins = getPlugins(versionDir, descriptorPattern);
         run(plugins, application, args.toArray(new String[args.size()]));
         // start all bundles to let them initialize their services,
@@ -40,22 +41,21 @@ public class BootImpl extends Boot {
     }
 
   public File getVersionDir(List<File> modulesDir) {
+    assert modulesDir != null : "No modules directories";
     String version = null;
     String pluginsPath = null;
-    if (modulesDir != null) {
-      if (modulesDir.isEmpty()) {
-        return null;
-      }
-      for (File dir : modulesDir) {
-        String dirVersion = getVersionNumber(dir);
-        if (version == null
-                || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
-          version = dirVersion;
-          pluginsPath = dir.getPath() + File.separator + dirVersion;
-        }
+    if (modulesDir.isEmpty()) {
+      return null;
+    }
+    for (File dir : modulesDir) {
+      String dirVersion = getVersionNumber(dir);
+      if (version == null
+              || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
+        version = dirVersion;
+        pluginsPath = dir.getPath() + File.separator + dirVersion;
       }
     }
-    assert pluginsPath != null && version != null : "No plugin folder found";
+    assert version != null : "No plugin folder found";
 
     File versionDir = new File(pluginsPath);
     assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());

@@ -133,7 +133,6 @@ public abstract class Boot {
             String[] modulesDirArray = getModulesPaths(modulesDir);
             for (String dir : modulesDirArray) {
               File modulesFile = new File(dir);
-              assert modulesFile != null : "Failed to find plugins directory";
               assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
               modulesFiles.add(modulesFile);
             }
@@ -172,8 +171,14 @@ public abstract class Boot {
     if (modules == null) {
       return new String[0];
     }
-    modules = modules.replaceAll("~", System.getProperty("user.home"));
-    return modules.split(File.pathSeparator);
+    String[] pathParts = modules.split(File.pathSeparator);
+    for (int i = 0; i < pathParts.length; i++) {
+      if(pathParts[i].startsWith("~")) {
+        pathParts[i] = pathParts[i].replaceAll("~", System.getProperty("user.home"));
+      }
+
+    }
+    return pathParts;
   }
 
 	public static Boot getInstance() {
