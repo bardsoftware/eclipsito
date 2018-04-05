@@ -41,7 +41,7 @@ public class TestPluginFolderResolver extends TestsEclipsitoBase {
     assertEquals(result.getPath(), "modules/pluginFolders/directory1/3.0.0");
   }
 
-  public void testSelectOnlyEMptyFolders() {
+  public void testSelectOnlyEmptyFolders() {
     List<File> list = new ArrayList<>();
     list.add(folder3);
     list.add(folder3);
