@@ -42,24 +42,21 @@ public class BootImpl extends Boot {
 
   public File getVersionDir(List<File> modulesDir) {
     assert modulesDir != null : "No modules directories";
-    String version = null;
-    String pluginsPath = null;
     if (modulesDir.isEmpty()) {
       return null;
     }
+    String version = null;
+    File versionDir = null;
     for (File dir : modulesDir) {
       String dirVersion = getVersionNumber(dir);
       if (version == null
               || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
         version = dirVersion;
-        pluginsPath = dir.getPath() + File.separator + dirVersion;
+        versionDir = new File(dir, dirVersion);
+        assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
+        assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
       }
     }
-    assert version != null : "No plugin folder found";
-
-    File versionDir = new File(pluginsPath);
-    assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
-    assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
     return versionDir;
   }
 

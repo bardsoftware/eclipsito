@@ -173,8 +173,8 @@ public abstract class Boot {
     }
     String[] pathParts = modules.split(File.pathSeparator);
     for (int i = 0; i < pathParts.length; i++) {
-      if(pathParts[i].startsWith("~")) {
-        pathParts[i] = pathParts[i].replaceAll("~", System.getProperty("user.home"));
+      if (pathParts[i].startsWith("~")) {
+        pathParts[i] = pathParts[i].replace("~", System.getProperty("user.home"));
       }
 
     }
