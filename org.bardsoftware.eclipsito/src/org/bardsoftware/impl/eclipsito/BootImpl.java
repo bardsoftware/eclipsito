@@ -51,10 +51,13 @@ public class BootImpl extends Boot {
       String dirVersion = getVersionNumber(dir);
       if (version == null
               || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
-        version = dirVersion;
-        versionDir = new File(dir, dirVersion);
-        assert versionDir.exists() : String.format("Directory %s doesn't exist", versionDir.getAbsolutePath());
-        assert versionDir.isDirectory() && versionDir.canRead() : String.format("File %s is not a directory or is not readable", versionDir.getAbsolutePath());
+        File newVersionDir = new File(dir, dirVersion);
+        if (versionDir.exists() && versionDir.isDirectory() && versionDir.canRead()) {
+          version = dirVersion;
+          versionDir = newVersionDir;
+        } else {
+          Boot.LOG.severe("Cannot read folder with path " + dir.getPath() + File.separator + dirVersion);
+        }
       }
     }
     return versionDir;

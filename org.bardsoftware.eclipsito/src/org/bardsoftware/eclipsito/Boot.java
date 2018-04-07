@@ -167,14 +167,14 @@ public abstract class Boot {
     return modulesResources;
   }
 
-  private static String[] getModulesPaths(String modules) {
+  public static String[] getModulesPaths(String modules) {
     if (modules == null) {
       return new String[0];
     }
     String[] pathParts = modules.split(File.pathSeparator);
     for (int i = 0; i < pathParts.length; i++) {
       if (pathParts[i].startsWith("~")) {
-        pathParts[i] = pathParts[i].replace("~", System.getProperty("user.home"));
+        pathParts[i] = pathParts[i].replaceFirst("~", System.getProperty("user.home"));
       }
 
     }
