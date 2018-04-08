@@ -2,7 +2,10 @@ package org.bardsoftware.impl.eclipsito;
 
 import org.bardsoftware.eclipsito.Boot;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -17,12 +20,14 @@ public class BootImpl extends Boot {
 
     private PlatformImpl myPlatform;
 
-    public void run(String application, File modulesDir, String descriptorPattern, List<String> args) {
+    public void run(String application, List<File> modulesDirs, String descriptorPattern, List<String> args) {
         myPlatform = new PlatformImpl();
         Boot.LOG.fine("Eclipsito platform is running.");
         ShutdownHook.install();
 
-        PluginDescriptor[] plugins = getPlugins(modulesDir, descriptorPattern);
+        File versionDir = getVersionDir(modulesDirs);
+        assert versionDir != null : "No plugin folder found";
+        PluginDescriptor[] plugins = getPlugins(versionDir, descriptorPattern);
         run(plugins, application, args.toArray(new String[args.size()]));
         // start all bundles to let them initialize their services,
         // this should be done before an application is started
@@ -34,6 +39,41 @@ public class BootImpl extends Boot {
       PluginDescriptor[] plugins = ModulesDirectoryProcessor.process(pluginDirFile, descriptorPattern);
       return plugins;
     }
+
+  public File getVersionDir(List<File> modulesDir) {
+    assert modulesDir != null : "No modules directories";
+    if (modulesDir.isEmpty()) {
+      return null;
+    }
+    String version = null;
+    File versionDir = null;
+    for (File dir : modulesDir) {
+      String dirVersion = getVersionNumber(dir);
+      if (version == null
+              || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
+        File newVersionDir = new File(dir, dirVersion);
+        if (versionDir.exists() && versionDir.isDirectory() && versionDir.canRead()) {
+          version = dirVersion;
+          versionDir = newVersionDir;
+        } else {
+          Boot.LOG.severe("Cannot read folder with path " + dir.getPath() + File.separator + dirVersion);
+        }
+      }
+    }
+    return versionDir;
+  }
+
+  private String getVersionNumber(File modulesDir) {
+    File versionFile = new File(modulesDir + File.separator + "VERSION");
+    try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
+      String version = br.readLine();
+      assert version != null : "Empty version file";
+      return version;
+    } catch (IOException e) {
+      Boot.LOG.severe("No version file found");
+    }
+    return null;
+  }
 
     public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
       if (plugins.length == 0) {
