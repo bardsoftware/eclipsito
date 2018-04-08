@@ -17,6 +17,15 @@ sourceSets {
             include '**/*.java'
         }
     }
+    test {
+        java {
+            srcDirs = ['src']
+            include 'org/bardsoftware/test/**/*.java'
+        }
+        resources {
+            srcDirs = [ 'modules' ]
+        }
+    }
 }
 
 test {

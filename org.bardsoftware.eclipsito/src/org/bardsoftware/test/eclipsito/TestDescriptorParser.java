@@ -41,7 +41,7 @@ public class TestDescriptorParser extends TestsEclipsitoBase {
         try {
             DescriptorParserMock.test(root);
             fail();
-        } catch (InvalidParameterException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(true);
         }
     }
@@ -53,7 +53,7 @@ public class TestDescriptorParser extends TestsEclipsitoBase {
 
     private static class DescriptorParserMock extends DescriptorParser {
         public static PluginDescriptor test(Element pluginElement) throws MalformedURLException {
-            URI pluginDescriptorUri = URI.create("");
+            URI pluginDescriptorUri = URI.create("file:///tmp");
             return constructPluginDescriptor(pluginElement, pluginDescriptorUri.toURL());
         }
     }
