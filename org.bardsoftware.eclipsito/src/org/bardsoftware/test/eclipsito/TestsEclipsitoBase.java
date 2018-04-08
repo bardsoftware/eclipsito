@@ -3,10 +3,11 @@ package org.bardsoftware.test.eclipsito;
 import junit.framework.TestCase;
 import org.bardsoftware.impl.eclipsito.PluginDescriptor;
 import org.w3c.dom.NodeList;
-
+import org.junit.Ignore;
 import java.net.MalformedURLException;
 import java.net.URI;
 
+@Ignore
 public class TestsEclipsitoBase extends TestCase {
 
     public void allTestsSetUp() {
@@ -18,7 +19,7 @@ public class TestsEclipsitoBase extends TestCase {
     protected PluginDescriptorMock[] createDescriptorsArrayWithIntNames(int size) throws MalformedURLException {
         PluginDescriptorMock[] result = new PluginDescriptorMock[size];
         for (int i=0; i<size; i++) {
-            result[i] = new PluginDescriptorMock(URI.create(""));
+            result[i] = new PluginDescriptorMock(URI.create("file:///tmp"));
             result[i].setId(String.valueOf(i));
         }
         return result;
