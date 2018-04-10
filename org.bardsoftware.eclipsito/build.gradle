@@ -1,0 +1,43 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+            include '**/*.java'
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src']
+            include 'org/bardsoftware/test/**/*.java'
+        }
+        resources {
+            srcDirs = [ 'modules' ]
+        }
+    }
+}
+
+test {
+    doLast {
+        configurations.testRuntime.each { println it }
+    }
+    include '**'
+    testLogging {
+        exceptionFormat = 'full'
+    }
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+}
+

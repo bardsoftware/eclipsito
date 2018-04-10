@@ -23,21 +23,21 @@ import org.eclipse.core.runtime.IModel;
 import org.eclipse.core.runtime.Platform;
 
 public class TestPluginDependencies extends TestsEclipsitoBase {
-    
+
     public void setUp() throws Exception {
-        URL configUrl = getClass().getClassLoader().getResource("modules/platform-config.xml");
+        URL configUrl = getClass().getClassLoader().getResource("platform-config.xml");
         assertNotNull("Failed to resolve path to config. Classpath problems?", configUrl);
         Boot.main(new String[] { configUrl.getPath() });
     }
-    
+
     public void tearDown() throws Exception {
         Boot.getInstance().shutdown();
     }
 
     //  to run this test we have to comment out all platform threading!!!
-    //  (we use threads for platform.start and platform.shutdown, 
+    //  (we use threads for platform.start and platform.shutdown,
     //  and the latter is called by the jvm shutdown hook)
-    //  see: cvs diff -r1.3 -r1.4 BootImpl.java 
+    //  see: cvs diff -r1.3 -r1.4 BootImpl.java
     public void _testDependeeStartsBeforeDependantBundle() throws Exception {
         assertTrue("plugin1 is expected to start before plugin2", Plugin1class.getStartNumber()<Plugin2class.getStartNumber());
         assertTrue("plugin4 is expected to start before plugin3", Plugin4class.getStartNumber()<Plugin3class.getStartNumber());
@@ -61,18 +61,18 @@ public class TestPluginDependencies extends TestsEclipsitoBase {
         assertNull(Platform.getBundle("plugin8"));
         assertNull(Platform.getBundle("plugin9"));
     }
-    
+
     public void testBrokenDependencies() throws Exception {
         // test broken dependency entry plugin10->x
         assertFalse(Plugin10class.wasStarted());
         assertNull(Platform.getBundle("plugin10"));
-        // test indirect broken dependency plugin11->plugin12->x 
+        // test indirect broken dependency plugin11->plugin12->x
         assertFalse(Plugin11class.wasStarted());
         assertFalse(Plugin12class.wasStarted());
         assertNull(Platform.getBundle("plugin11"));
         assertNull(Platform.getBundle("plugin12"));
     }
-    
+
     public void testExtensionsAreFoundOnlyForValidExtensionPoints() throws Exception {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
         // extension for non-existing point, goes quietly
@@ -91,7 +91,7 @@ public class TestPluginDependencies extends TestsEclipsitoBase {
         IConfigurationElement[] elements = extensions[0].getConfigurationElements();
         assertEquals(2, elements.length);
     }
-    
+
     public void testExtensionsAndExtensionPointsAreNotFoundInBrokenModules() {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
         IExtensionPoint brokenPluginPoint = registry.getExtensionPoint("plugin15.point1");

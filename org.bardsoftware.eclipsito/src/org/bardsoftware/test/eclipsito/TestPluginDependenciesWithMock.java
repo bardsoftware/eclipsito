@@ -10,7 +10,7 @@ public class TestPluginDependenciesWithMock extends TestsEclipsitoBase {
 
     public void testDependeeStartsBeforeDependantBundle() throws Exception {
         PlatformImplMock platform = new PlatformImplMock();
-        PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(4);        
+        PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(4);
         descriptors[0].setClassName(OurTestPlugin0.class.getName());
         descriptors[1].setClassName(OurTestPlugin1.class.getName());
         descriptors[2].setClassName(OurTestPlugin2.class.getName());
@@ -30,21 +30,21 @@ public class TestPluginDependenciesWithMock extends TestsEclipsitoBase {
 
     private static class PlatformImplMock extends PlatformImpl {
         public PlatformImplMock() {
-            super(null);
+            super();
         }
-        
+
         public void setup(PluginDescriptor[] descriptors) {
             super.setup(descriptors);
-        }        
+        }
     }
-    
+
     public abstract static class OurTestPluginBase {
         protected static int ourStartedPluginCounter = 0;
-        
+
         public void stop(BundleContext context) throws Exception {
-        }        
+        }
     }
-    
+
     public static class OurTestPlugin0 extends OurTestPluginBase implements BundleActivator {
         private static int ourStartNumber = 0;
 
@@ -56,7 +56,7 @@ public class TestPluginDependenciesWithMock extends TestsEclipsitoBase {
             return ourStartNumber;
         }
     }
-    
+
     public static class OurTestPlugin1 extends OurTestPluginBase implements BundleActivator {
         private static int ourStartNumber = 0;
 
@@ -68,7 +68,7 @@ public class TestPluginDependenciesWithMock extends TestsEclipsitoBase {
             return ourStartNumber;
         }
     }
-    
+
     public static class OurTestPlugin2 extends OurTestPluginBase implements BundleActivator {
         private static int ourStartNumber = 0;
 
@@ -78,9 +78,9 @@ public class TestPluginDependenciesWithMock extends TestsEclipsitoBase {
 
         public static int getStartNumber() {
             return ourStartNumber;
-        }        
+        }
     }
-    
+
     public static class OurTestPlugin3 extends OurTestPluginBase implements BundleActivator {
         private static int ourStartNumber = 0;
 
