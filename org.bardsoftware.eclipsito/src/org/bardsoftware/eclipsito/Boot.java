@@ -168,9 +168,7 @@ public abstract class Boot {
   }
 
   public static String[] getModulesPaths(String modules) {
-    if (modules == null) {
-      return new String[0];
-    }
+    assert modules != null;
     String[] pathParts = modules.split(File.pathSeparator);
     for (int i = 0; i < pathParts.length; i++) {
       if (pathParts[i].startsWith("~")) {

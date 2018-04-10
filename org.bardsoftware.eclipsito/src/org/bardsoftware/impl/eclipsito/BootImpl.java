@@ -49,10 +49,10 @@ public class BootImpl extends Boot {
     File versionDir = null;
     for (File dir : modulesDir) {
       String dirVersion = getVersionNumber(dir);
-      if (version == null
-              || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
+      if (dirVersion != null &&
+              (version == null || version.compareTo(dirVersion) < 0)) {
         File newVersionDir = new File(dir, dirVersion);
-        if (versionDir.exists() && versionDir.isDirectory() && versionDir.canRead()) {
+        if (newVersionDir.exists() && newVersionDir.isDirectory() && newVersionDir.canRead()) {
           version = dirVersion;
           versionDir = newVersionDir;
         } else {
@@ -64,13 +64,13 @@ public class BootImpl extends Boot {
   }
 
   private String getVersionNumber(File modulesDir) {
-    File versionFile = new File(modulesDir + File.separator + "VERSION");
+    File versionFile = new File(modulesDir, "VERSION");
     try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
       String version = br.readLine();
       assert version != null : "Empty version file";
       return version;
     } catch (IOException e) {
-      Boot.LOG.severe("No version file found");
+      Boot.LOG.log(Level.SEVERE, "No version file found", e);
     }
     return null;
   }
