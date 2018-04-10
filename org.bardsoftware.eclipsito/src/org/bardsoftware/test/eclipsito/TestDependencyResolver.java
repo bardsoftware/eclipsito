@@ -1,14 +1,14 @@
 package org.bardsoftware.test.eclipsito;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.bardsoftware.impl.eclipsito.DependencyResolver;
 import org.bardsoftware.impl.eclipsito.PluginDescriptor;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class TestDependencyResolver extends TestsEclipsitoBase {
 
-    public void testResolveDependencyCyclesSimpleLoop() {
+    public void testResolveDependencyCyclesSimpleLoop() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(2);
         descriptors[0].addRequiredPluginId("1");
         descriptors[1].addRequiredPluginId("0");
@@ -17,7 +17,7 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
         assertEquals(0, result.length);
     }
 
-    public void testResolveDependencyCyclesTriangleLoop() {
+    public void testResolveDependencyCyclesTriangleLoop() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(3);
         descriptors[0].addRequiredPluginId("1");
         descriptors[1].addRequiredPluginId("2");
@@ -26,16 +26,16 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
         assertNotNull(result);
         assertEquals(0, result.length);
     }
-    
-    public void testResolveDependencyCyclesMissingDependency() {
+
+    public void testResolveDependencyCyclesMissingDependency() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(1);
         descriptors[0].addRequiredPluginId("x");
         PluginDescriptor[] result = new DependencyResolver(descriptors).resolveAll();
         assertNotNull(result);
         assertEquals(0, result.length);
     }
-    
-    public void testResolveDependencyCyclesMissingDependencies() {
+
+    public void testResolveDependencyCyclesMissingDependencies() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(2);
         descriptors[0].addRequiredPluginId("1");
         descriptors[1].addRequiredPluginId("x");
@@ -43,29 +43,29 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
         assertNotNull(result);
         assertEquals(0, result.length);
     }
-    
-    public void testResolveDependencyCyclesOneSingleElement() {
+
+    public void testResolveDependencyCyclesOneSingleElement() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(1);
         PluginDescriptor[] result = new DependencyResolver(descriptors).resolveAll();
         assertNotNull(result);
         assertEquals(1, result.length);
         assertEquals(descriptors[0], result[0]);
     }
-    
-    public void testResolveDependencyCyclesNSingleElements() {
+
+    public void testResolveDependencyCyclesNSingleElements() throws Exception {
         int elements = 3;
         PluginDescriptor[] descriptors = createDescriptorsArrayWithIntNames(elements);
         PluginDescriptor[] result = new DependencyResolver(descriptors).resolveAll();
         assertEquals(elements, result.length);
     }
-    
-    public void testResolveDependencyCyclesEmptyArray() {
+
+    public void testResolveDependencyCyclesEmptyArray() throws Exception {
         PluginDescriptor[] descriptors = createDescriptorsArrayWithIntNames(0);
         PluginDescriptor[] result = new DependencyResolver(descriptors).resolveAll();
         assertNotNull(result);
         assertEquals(0, result.length);
     }
-    
+
     public void testResolveDependenciesNull() {
         try {
             new DependencyResolver(null);
@@ -74,8 +74,8 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
             assertTrue(true);
         }
     }
-    
-    public void testResolveDependenciesLinearForward() {
+
+    public void testResolveDependenciesLinearForward() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(3);
         descriptors[0].addRequiredPluginId("1");
         descriptors[1].addRequiredPluginId("2");
@@ -87,8 +87,8 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
             fail();
         }
     }
-    
-    public void testResolveDependenciesLinearBackOrder() {
+
+    public void testResolveDependenciesLinearBackOrder() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(3);
         descriptors[1].addRequiredPluginId("0");
         descriptors[2].addRequiredPluginId("1");
@@ -100,8 +100,8 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
             fail();
         }
     }
-    
-    public void testResolveDependencyCyclesSomeRandomLargerLoopStructure() {
+
+    public void testResolveDependencyCyclesSomeRandomLargerLoopStructure() throws Exception {
         PluginDescriptorMock[] descriptors = createDescriptorsArrayWithIntNames(8);
         descriptors[1].addRequiredPluginId("0");
         descriptors[2].addRequiredPluginId("4");
@@ -123,5 +123,5 @@ public class TestDependencyResolver extends TestsEclipsitoBase {
             fail();
         }
     }
-    
+
 }
