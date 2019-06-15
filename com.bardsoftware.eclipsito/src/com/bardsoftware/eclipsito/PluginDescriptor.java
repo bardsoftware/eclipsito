@@ -1,5 +1,6 @@
 package com.bardsoftware.eclipsito;
 
+import com.bardsoftware.eclipsito.runtime.ExtensionImpl;
 import org.eclipse.core.runtime.IExtension;
 import org.w3c.dom.NodeList;
 
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 
 public class PluginDescriptor {
 
-    final URL myLocationUrl;
+    public final URL myLocationUrl;
 
     private String myId;
     private String myName;
@@ -177,7 +178,7 @@ public class PluginDescriptor {
         public final String myLabel;
         public final String mySchemaReference;
 
-        protected ExtensionPointDescriptor(String name, String namespace, String label, String schemaReference) {
+        public ExtensionPointDescriptor(String name, String namespace, String label, String schemaReference) {
             myRelativeName = name;
             myNamespace = namespace;
             myLabel = label;

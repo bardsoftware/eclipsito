@@ -1,6 +1,7 @@
 // Copyright (C) 2019 BarD Software
 package com.bardsoftware.eclipsito;
 
+import com.bardsoftware.eclipsito.runtime.Runner;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
@@ -8,24 +9,37 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 class Args {
-  @Parameter(names = "--plugins", description = "The root directory of all plugin versions")
-  String pluginsDir;
+  @Parameter(names = "--descriptor-pattern", description = "Regexp on the plugin descriptor file name")
+  String descriptorPattern = "plugin.xml";
+
+  @Parameter(names = "--bundles", description = "The root directory of all versioned bundles")
+  String bundleDirs;
+
+  @Parameter(names = "--app", description = "Application to run")
+  String app;
 
   @Parameter(names = "--help", help = true)
   boolean help;
+
+  @Parameter(description = "Application arguments")
+  List<String> appArgs = new ArrayList<>();
 }
 
 /**
  * @author dbarashev@bardsoftware.com
  */
 public class Launch {
-  public static final Logger LOG = Logger.getLogger("Launcher");
+  public static final Logger LOG = Logger.getLogger("Eclipsito");
 
   public static void main(String[] argv) {
     Args args = new Args();
@@ -35,51 +49,59 @@ public class Launch {
       parser.usage();
       System.exit(0);
     }
-    List<File> moduleDirs = getModuleDirs(args.pluginsDir);
-    moduleDirs.forEach(file -> {
+
+    System.err.println(args.appArgs);
+    SortedMap<String, File> version2bundleDir = new TreeMap<>(Comparator.reverseOrder());
+    getBundleDirs(args.bundleDirs).forEach(file -> {
       if (!file.isDirectory()) {
         die(String.format("Not a directory: %s", file));
       }
       if (!file.canRead()) {
         die(String.format("Cannot read directory: %s", file));
       }
+      version2bundleDir.putAll(collectVersionedBundles(file));
     });
 
-    File highestVersion = getVersionDir(moduleDirs);
-
+    SortedMap<String, PluginDescriptor> version2descriptor = new TreeMap<>();
+    version2bundleDir.forEach((version, bundleDir) -> {
+      try {
+        ModulesDirectoryProcessor.process(bundleDir, args.descriptorPattern)
+            .forEach(descriptor -> {
+              String key = String.format("%s: %s", version, descriptor.getId());
+              version2descriptor.putIfAbsent(key, descriptor);
+            });
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    });
+    Runner runner = new Runner();
+    final PluginDescriptor[] descriptors = version2descriptor.values()
+        .toArray(new PluginDescriptor[version2descriptor.size()]);
+    runner.run(descriptors, args.app, new String[0]);
   }
 
-  static List<File> getModuleDirs(String pluginsDir) {
-    return Arrays.stream(pluginsDir.split(File.pathSeparator))
-        .map(path -> path.startsWith("~") ? path.replaceFirst("~", System.getProperty("user.home")) : path)
+  static List<File> getBundleDirs(String bundleDir) {
+    return Arrays.stream(bundleDir.split(File.pathSeparator))
+        .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home")) : path)
         .map(File::new)
         .collect(Collectors.toList());
   }
 
-  static File getVersionDir(List<File> modulesDir) {
-    if (modulesDir.isEmpty()) {
-      die("No module directories found");
-    }
-    String version = null;
-    File versionDir = null;
-    for (File dir : modulesDir) {
-      String dirVersion = getVersionNumber(dir);
-      if (version == null
-          || (dirVersion != null && version.compareTo(dirVersion) < 0)) {
-        File newVersionDir = new File(dir, dirVersion);
-        if (versionDir.exists() && versionDir.isDirectory() && versionDir.canRead()) {
-          version = dirVersion;
-          versionDir = newVersionDir;
-        } else {
-          LOG.severe("Cannot read folder with path " + dir.getPath() + File.separator + dirVersion);
-        }
+  static SortedMap<String, File> collectVersionedBundles(File bundlesDir) {
+    TreeMap<String, File> result = new TreeMap<>();
+    for (File bundle : bundlesDir.listFiles(f -> f.isDirectory())) {
+      String bundleVersion = getVersionNumber(bundle);
+      if (bundleVersion == null) {
+        LOG.warning(String.format("Can't find VERSION file in directory=%s. This directory will be skipped", bundle.getAbsolutePath()));
+        continue;
       }
+      result.put(bundleVersion, bundle);
     }
-    return versionDir;
+    return result;
   }
 
   static String getVersionNumber(File modulesDir) {
-    File versionFile = new File(modulesDir + File.separator + "VERSION");
+    File versionFile = new File(modulesDir, "VERSION");
     try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
       String version = br.readLine();
       assert version != null : "Empty version file";

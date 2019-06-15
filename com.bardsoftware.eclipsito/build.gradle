@@ -10,9 +10,10 @@ repositories {
 
 dependencies {
     compile 'com.beust:jcommander:1.72'
-
 }
 
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 sourceSets {
     main {
         java {
