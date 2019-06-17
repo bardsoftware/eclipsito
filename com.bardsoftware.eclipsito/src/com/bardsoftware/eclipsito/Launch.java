@@ -12,9 +12,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -22,11 +29,14 @@ class Args {
   @Parameter(names = "--descriptor-pattern", description = "Regexp on the plugin descriptor file name")
   String descriptorPattern = "plugin.xml";
 
-  @Parameter(names = "--bundles", description = "The root directory of all versioned bundles")
-  String bundleDirs;
+  @Parameter(names = "--version-dirs", description = "The list of version layer directories")
+  String versionDirs;
 
   @Parameter(names = "--app", description = "Application to run")
   String app;
+
+  @Parameter(names = { "--verbosity", "-v" }, description = "Logging verbosity level 0+")
+  Integer verbosity = 2;
 
   @Parameter(names = "--help", help = true)
   boolean help;
@@ -50,9 +60,18 @@ public class Launch {
       System.exit(0);
     }
 
-    System.err.println(args.appArgs);
+    switch(args.verbosity) {
+      case 0: LOG.setLevel(Level.OFF); break;
+      case 1: LOG.setLevel(Level.SEVERE); break;
+      case 2: LOG.setLevel(Level.WARNING); break;
+      case 3: LOG.setLevel(Level.INFO); break;
+      case 4: LOG.setLevel(Level.FINE); break;
+      case 5: LOG.setLevel(Level.FINER); break;
+      case 6: LOG.setLevel(Level.FINEST); break;
+      default: LOG.setLevel(Level.ALL);
+    }
     SortedMap<String, File> version2bundleDir = new TreeMap<>(Comparator.reverseOrder());
-    getBundleDirs(args.bundleDirs).forEach(file -> {
+    getBundleDirs(args.versionDirs).forEach(file -> {
       if (!file.isDirectory()) {
         die(String.format("Not a directory: %s", file));
       }
@@ -71,13 +90,20 @@ public class Launch {
               version2descriptor.putIfAbsent(key, descriptor);
             });
       } catch (IOException e) {
-        e.printStackTrace();
+        LOG.log(Level.SEVERE, "Failed to process plugin descriptors", e);
+        die("");
       }
     });
+    try (BareFormatter formatter = new BareFormatter()) {
+      LOG.info("We will run with the following plugins:");
+      version2descriptor.forEach((version, descriptor) -> {
+        LOG.info(String.format("%s at %s", version, descriptor.myLocationUrl));
+      });
+    }
     Runner runner = new Runner();
     final PluginDescriptor[] descriptors = version2descriptor.values()
-        .toArray(new PluginDescriptor[version2descriptor.size()]);
-    runner.run(descriptors, args.app, new String[0]);
+        .toArray(new PluginDescriptor[0]);
+    runner.run(descriptors, args.app, args.appArgs.toArray(new String[0]));
   }
 
   static List<File> getBundleDirs(String bundleDir) {
@@ -115,6 +141,27 @@ public class Launch {
   private static void die(String message) {
     LOG.severe(message);
     System.exit(1);
+  }
+
+  private static class BareFormatter implements AutoCloseable {
+    private Map<Handler, Formatter> handler2formatter = new HashMap<>();
+
+    BareFormatter() {
+      for (Handler h : LogManager.getLogManager().getLogger("").getHandlers()) {
+        handler2formatter.put(h, h.getFormatter());
+        h.setFormatter(new Formatter() {
+          @Override
+          public String format(LogRecord logRecord) {
+            return String.format("%s\n", formatMessage(logRecord));
+          }
+        });
+      }
+    }
+
+    @Override
+    public void close() {
+      handler2formatter.forEach(Handler::setFormatter);
+    }
   }
 
 

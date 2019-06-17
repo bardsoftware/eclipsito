@@ -85,7 +85,9 @@ class DescriptorParser {
             for (int i = 0; i < imports.getLength(); i++) {
                 Element imported = (Element) imports.item(i);
                 String requiredPluginId = imported.getAttribute(PLUGIN_REQUIRES_PLUGIN);
-                pluginDescriptor.addRequiredPluginId(requiredPluginId);
+                if (!PI_RUNTIME.equals(requiredPluginId)) {
+                    pluginDescriptor.addRequiredPluginId(requiredPluginId);
+                }
             }
         }
     }
@@ -135,6 +137,7 @@ class DescriptorParser {
     private static final String PLUGIN_VERSION = "version"; //$NON-NLS-1$
     private static final String PLUGIN_CLASS = "class"; //$NON-NLS-1$
 
+    private static final String PI_RUNTIME = "org.eclipse.core.runtime"; //$NON-NLS-1$
     private static final String PLUGIN_REQUIRES = "requires"; //$NON-NLS-1$
     private static final String PLUGIN_REQUIRES_PLUGIN = "plugin"; //$NON-NLS-1$
     private static final String PLUGIN_REQUIRES_IMPORT = "import"; //$NON-NLS-1$
