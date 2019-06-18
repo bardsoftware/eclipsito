@@ -59,7 +59,17 @@ public class Updater {
   }
 
 
-  public CompletableFuture<File> installUpdate(VersionLayerInfo versionLayer) {
+  public CompletableFuture<File> installUpdate(VersionLayerInfo versionLayer) throws IOException {
+    return new DownloadWorker(
+        progress -> System.out.println(String.format("Downloading update: %d%% done", progress)),
+        getVersionLayerDir(),
+        versionLayer.url
+    ).downloadUpdate();
+  }
 
+  private File getVersionLayerDir() throws IOException {
+    return this.versionLayerRoots.stream()
+        .filter(file -> file.exists() && file.isDirectory() && file.canWrite())
+        .findFirst().orElseThrow(() -> new IOException("Cannot find writable directory for installing new version"));
   }
 }

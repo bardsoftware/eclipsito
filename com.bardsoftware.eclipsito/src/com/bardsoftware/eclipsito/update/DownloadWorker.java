@@ -44,7 +44,13 @@ public class DownloadWorker {
       try (Response resp = httpClient.newCall(req).execute()) {
         if (resp.code() == 200) {
           File tempFile = File.createTempFile("ganttproject-update", "zip");
-          File zipFile = downloadZip(resp, tempFile);
+          downloadZip(resp, tempFile);
+          unzipUpdates(tempFile);
+        } else {
+          throw new IOException(String.format(
+              "Cannot download update from %s. Server responds with %s",
+              myDownloadURL, String.valueOf(resp.code())
+          ));
         }
       } catch (IOException e) {
         result.completeExceptionally(e);
@@ -53,7 +59,7 @@ public class DownloadWorker {
     return result;
   }
 
-  private File downloadZip(Response resp, File outFile) throws IOException  {
+  private void downloadZip(Response resp, File outFile) throws IOException  {
     long fileSize = resp.body().contentLength();
     try (InputStream inputStream = resp.body().byteStream();
          FileOutputStream outputStream = new FileOutputStream(outFile)) {
@@ -78,7 +84,8 @@ public class DownloadWorker {
       File folder = myLayerDir;
       if (!folder.exists()) {
         if (!folder.mkdirs()) {
-          throw new IOException("Cannot create plugins folder");
+          throw new IOException(String.format(
+              "Folder %s does not exist and failed to create", folder.getAbsolutePath()));
         }
       }
 
@@ -87,19 +94,29 @@ public class DownloadWorker {
         String fileName = zipEntry.getName();
 
         if (zipEntry.isDirectory()) {
-          continue;
-        }
-
-        File newFile = new File(myLayerDir, fileName);
-        File parent = newFile.getParentFile();
-        if (!parent.exists()) {
-          if (!parent.mkdirs()) {
-            throw new IOException("Cannot create plugins folder");
+          File dir = new File(myLayerDir, zipEntry.getName());
+          if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+              throw new IOException(String.format(
+                  "Failed to unzip updates. Cannot create folder %s", dir.getAbsolutePath()));
+            }
           }
-        }
+        } else {
+          File newFile = new File(myLayerDir, fileName);
+          File parent = newFile.getParentFile();
+          if (!parent.exists()) {
+            if (!parent.mkdirs()) {
+              throw new IOException(String.format(
+                  "Failed to unzip updates. Cannot create folder %s", parent.getAbsolutePath()));
+            }
+          }
 
-        try (FileOutputStream fos = new FileOutputStream(newFile)) {
-          copy(zis, fos);
+          try (FileOutputStream fos = new FileOutputStream(newFile)) {
+            copy(zis, fos);
+          } catch (IOException e) {
+            throw new IOException(String.format(
+                "Failed to unzip entry %s", zipEntry.getName()), e);
+          }
         }
         zis.closeEntry();
       }
