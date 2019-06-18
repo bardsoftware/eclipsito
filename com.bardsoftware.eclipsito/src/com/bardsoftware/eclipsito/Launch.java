@@ -1,7 +1,9 @@
 // Copyright (C) 2019 BarD Software
 package com.bardsoftware.eclipsito;
 
+import com.bardsoftware.eclipsito.runtime.PlatformImpl;
 import com.bardsoftware.eclipsito.runtime.Runner;
+import com.bardsoftware.eclipsito.update.Updater;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
@@ -70,19 +72,19 @@ public class Launch {
       case 6: LOG.setLevel(Level.FINEST); break;
       default: LOG.setLevel(Level.ALL);
     }
-    SortedMap<String, File> version2bundleDir = new TreeMap<>(Comparator.reverseOrder());
-    getBundleDirs(args.versionDirs).forEach(file -> {
+    SortedMap<String, File> version2dir = new TreeMap<>(Comparator.reverseOrder());
+    getVersionLayerDirs(args.versionDirs).forEach(file -> {
       if (!file.isDirectory()) {
         die(String.format("Not a directory: %s", file));
       }
       if (!file.canRead()) {
         die(String.format("Cannot read directory: %s", file));
       }
-      version2bundleDir.putAll(collectVersionedBundles(file));
+      version2dir.putAll(collectVersionedBundles(file));
     });
 
     SortedMap<String, PluginDescriptor> version2descriptor = new TreeMap<>();
-    version2bundleDir.forEach((version, bundleDir) -> {
+    version2dir.forEach((version, bundleDir) -> {
       try {
         ModulesDirectoryProcessor.process(bundleDir, args.descriptorPattern)
             .forEach(descriptor -> {
@@ -100,13 +102,15 @@ public class Launch {
         LOG.info(String.format("%s at %s", version, descriptor.myLocationUrl));
       });
     }
-    Runner runner = new Runner();
+    Updater updater = new Updater(version2dir.values());
+    PlatformImpl platform = new PlatformImpl(updater);
+    Runner runner = new Runner(platform);
     final PluginDescriptor[] descriptors = version2descriptor.values()
         .toArray(new PluginDescriptor[0]);
     runner.run(descriptors, args.app, args.appArgs.toArray(new String[0]));
   }
 
-  static List<File> getBundleDirs(String bundleDir) {
+  static List<File> getVersionLayerDirs(String bundleDir) {
     return Arrays.stream(bundleDir.split(File.pathSeparator))
         .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home")) : path)
         .map(File::new)

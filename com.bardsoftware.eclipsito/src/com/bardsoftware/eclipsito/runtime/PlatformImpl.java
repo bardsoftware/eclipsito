@@ -2,6 +2,7 @@ package com.bardsoftware.eclipsito.runtime;
 
 import com.bardsoftware.eclipsito.Launch;
 import com.bardsoftware.eclipsito.PluginDescriptor;
+import com.bardsoftware.eclipsito.update.Updater;
 import org.bardsoftware.impl.eclipsito.JobManagerImpl;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -15,12 +16,14 @@ import org.osgi.framework.BundleException;
 
 import java.util.logging.Level;
 
-public class PlatformImpl extends Platform /*implements Bundle */ {
+public class PlatformImpl extends Platform {
+    private final Updater updater;
     private IExtensionRegistry myExtensionRegistry;
     private Bundle[] myBundles;
 
-    protected PlatformImpl() {
+    public PlatformImpl(Updater updater) {
         setInstance(this);
+        this.updater = updater;
     }
 
     protected void setup(PluginDescriptor[] descriptors) {
@@ -106,6 +109,11 @@ public class PlatformImpl extends Platform /*implements Bundle */ {
         } catch (CoreException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    protected Updater geUpdaterImpl() {
+        return this.updater;
     }
 
 }

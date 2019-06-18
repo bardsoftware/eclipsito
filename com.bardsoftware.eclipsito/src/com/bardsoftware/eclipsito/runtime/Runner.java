@@ -16,8 +16,11 @@ public class Runner {
       Launch.LOG.log(Level.WARNING, "[uncaughtException]" + e, e);
     }
   };
+  private final PlatformImpl myPlatform;
 
-  private PlatformImpl myPlatform = new PlatformImpl();
+  public Runner(PlatformImpl platform) {
+    myPlatform = platform;
+  }
 
   public void run(PluginDescriptor[] plugins, final String application, final String[] args) {
     if (plugins.length == 0) {
