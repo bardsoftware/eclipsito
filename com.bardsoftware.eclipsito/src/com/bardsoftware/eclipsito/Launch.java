@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Formatter;
@@ -73,8 +74,10 @@ public class Launch {
       default: LOG.setLevel(Level.ALL);
     }
     List<File> updateLayerStores = new ArrayList<>();
-    SortedMap<String, File> version2dir = new TreeMap<>(Comparator.reverseOrder());
-    getVersionLayerDirs(args.versionDirs).forEach(file -> {
+
+    // We order layers in descending order of their version numbers.
+    SortedMap<String, File> layer2dir = new TreeMap<>(Comparator.reverseOrder());
+    getVersionLayerStoreDirs(args.versionDirs).forEach(file -> {
       if (!file.isDirectory()) {
         die(String.format("Not a directory: %s", file));
       }
@@ -82,58 +85,62 @@ public class Launch {
         die(String.format("Cannot read directory: %s", file));
       }
       updateLayerStores.add(file);
-      version2dir.putAll(collectVersionedBundles(file));
+      layer2dir.putAll(collectLayers(file));
     });
 
-    SortedMap<String, PluginDescriptor> version2descriptor = new TreeMap<>();
-    version2dir.forEach((version, bundleDir) -> {
+    // De-duplicate plugins. We iterate over layers in descending order from the layer with the greatest version number.
+    // Should we meet plugin wih the same id and different version numbers twice, one with greatest number wins.
+    Map<DescriptorKey, PluginDescriptor> uniqueDescriptors = new HashMap<>();
+    layer2dir.forEach((version, layerDir) -> {
       try {
-        ModulesDirectoryProcessor.process(bundleDir, args.descriptorPattern)
-            .forEach(descriptor -> {
-              String key = String.format("%s: %s", version, descriptor.getId());
-              version2descriptor.putIfAbsent(key, descriptor);
-            });
+        ModulesDirectoryProcessor.process(layerDir, args.descriptorPattern)
+            .forEach(descriptor -> uniqueDescriptors.putIfAbsent(
+                new DescriptorKey(version, descriptor.getId()), descriptor
+            ));
       } catch (IOException e) {
         LOG.log(Level.SEVERE, "Failed to process plugin descriptors", e);
         die("");
       }
     });
+
     try (BareFormatter formatter = new BareFormatter()) {
       LOG.info("We will run with the following plugins:");
-      version2descriptor.forEach((version, descriptor) -> {
-        LOG.info(String.format("%s at %s", version, descriptor.myLocationUrl));
+      uniqueDescriptors.forEach((key, descriptor) -> {
+        LOG.info(String.format("%s at %s", key, descriptor.myLocationUrl));
       });
     }
     Updater updater = new Updater(updateLayerStores);
     PlatformImpl platform = new PlatformImpl(updater);
     Runner runner = new Runner(platform);
-    final PluginDescriptor[] descriptors = version2descriptor.values()
-        .toArray(new PluginDescriptor[0]);
-    runner.run(descriptors, args.app, args.appArgs.toArray(new String[0]));
+    runner.run(
+        uniqueDescriptors.values().toArray(new PluginDescriptor[0]),
+        args.app,
+        args.appArgs.toArray(new String[0])
+    );
   }
 
-  static List<File> getVersionLayerDirs(String bundleDir) {
-    return Arrays.stream(bundleDir.split(File.pathSeparator))
+  private static List<File> getVersionLayerStoreDirs(String storeSpec) {
+    return Arrays.stream(storeSpec.split(File.pathSeparator))
         .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home")) : path)
         .map(File::new)
         .collect(Collectors.toList());
   }
 
-  static SortedMap<String, File> collectVersionedBundles(File bundlesDir) {
+  private static SortedMap<String, File> collectLayers(File layerStore) {
     TreeMap<String, File> result = new TreeMap<>();
-    for (File bundle : bundlesDir.listFiles(f -> f.isDirectory())) {
-      String bundleVersion = getVersionNumber(bundle);
-      if (bundleVersion == null) {
-        LOG.warning(String.format("Can't find VERSION file in directory=%s. This directory will be skipped", bundle.getAbsolutePath()));
+    for (File layer : layerStore.listFiles(f -> f.isDirectory())) {
+      String version = getVersionNumber(layer);
+      if (version == null) {
+        LOG.warning(String.format("Can't find VERSION file in directory=%s. This directory will be skipped", layer.getAbsolutePath()));
         continue;
       }
-      result.put(bundleVersion, bundle);
+      result.put(version, layer);
     }
     return result;
   }
 
-  static String getVersionNumber(File modulesDir) {
-    File versionFile = new File(modulesDir, "VERSION");
+  private static String getVersionNumber(File layerDir) {
+    File versionFile = new File(layerDir, "VERSION");
     try (BufferedReader br = new BufferedReader(new FileReader(versionFile))) {
       String version = br.readLine();
       assert version != null : "Empty version file";
@@ -167,6 +174,34 @@ public class Launch {
     @Override
     public void close() {
       handler2formatter.forEach(Handler::setFormatter);
+    }
+  }
+
+  private static class DescriptorKey {
+    final String version;
+    final String pluginId;
+
+    DescriptorKey(String version, String pluginId) {
+      this.version = version;
+      this.pluginId = pluginId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      DescriptorKey that = (DescriptorKey) o;
+      return Objects.equals(pluginId, that.pluginId);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(pluginId);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("Plugin %s-%s", this.pluginId, this.version);
     }
   }
 
