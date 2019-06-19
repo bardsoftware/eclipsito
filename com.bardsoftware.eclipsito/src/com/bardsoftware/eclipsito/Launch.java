@@ -72,6 +72,7 @@ public class Launch {
       case 6: LOG.setLevel(Level.FINEST); break;
       default: LOG.setLevel(Level.ALL);
     }
+    List<File> updateLayerStores = new ArrayList<>();
     SortedMap<String, File> version2dir = new TreeMap<>(Comparator.reverseOrder());
     getVersionLayerDirs(args.versionDirs).forEach(file -> {
       if (!file.isDirectory()) {
@@ -80,6 +81,7 @@ public class Launch {
       if (!file.canRead()) {
         die(String.format("Cannot read directory: %s", file));
       }
+      updateLayerStores.add(file);
       version2dir.putAll(collectVersionedBundles(file));
     });
 
@@ -102,7 +104,7 @@ public class Launch {
         LOG.info(String.format("%s at %s", version, descriptor.myLocationUrl));
       });
     }
-    Updater updater = new Updater(version2dir.values());
+    Updater updater = new Updater(updateLayerStores);
     PlatformImpl platform = new PlatformImpl(updater);
     Runner runner = new Runner(platform);
     final PluginDescriptor[] descriptors = version2descriptor.values()

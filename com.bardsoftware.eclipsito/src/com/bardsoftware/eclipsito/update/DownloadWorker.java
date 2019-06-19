@@ -1,17 +1,23 @@
 // Copyright (C) 2019 BarD Software
 package com.bardsoftware.eclipsito.update;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -20,75 +26,69 @@ import java.util.zip.ZipInputStream;
  * @author dbarashev@bardsoftware.com
  */
 public class DownloadWorker {
-  public static final Logger LOG = Logger.getLogger("Eclipsito");
+  static final Logger LOG = Logger.getLogger("Eclipsito");
   private final File myLayerDir;
 
-  interface UIFacade {
-    void reportProgress(int progress);
-  }
   private static final int BUFFER_SIZE = 4096;
-  private String myDownloadURL;
-  private UIFacade myUiFacade;
 
-  public DownloadWorker(UIFacade uiFacade, File layerDir, String downloadURL) {
-    myUiFacade = uiFacade;
-    myDownloadURL = downloadURL;
+  DownloadWorker(File layerDir) {
     myLayerDir = layerDir;
   }
 
-  CompletableFuture<File> downloadUpdate() {
-    CompletableFuture<File> result = new CompletableFuture<>();
-    new Thread(() -> {
-      OkHttpClient httpClient = new OkHttpClient();
-      Request req = new Request.Builder().url(myDownloadURL).build();
-      try (Response resp = httpClient.newCall(req).execute()) {
-        if (resp.code() == 200) {
-          File tempFile = File.createTempFile("ganttproject-update", "zip");
-          downloadZip(resp, tempFile);
-          unzipUpdates(tempFile);
-        } else {
-          throw new IOException(String.format(
-              "Cannot download update from %s. Server responds with %s",
-              myDownloadURL, String.valueOf(resp.code())
-          ));
-        }
-      } catch (IOException e) {
-        result.completeExceptionally(e);
-      }
-    }).start();
-    return result;
+  CompletableFuture<File> downloadUpdate(String downloadUrl, UpdateProgressMonitor monitor) throws IOException {
+    HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
+    HttpRequest req = HttpRequest.newBuilder().uri(URI.create(downloadUrl)).build();
+    File tempFile = File.createTempFile("ganttproject-update", "zip");
+    return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofInputStream())
+        .thenApply(resp -> {
+          if (resp.statusCode() == 200) {
+            return downloadZip(resp, tempFile, monitor);
+          } else {
+            throw new RuntimeException(String.format(
+                "Cannot download update from %s. Server responds with %s",
+                downloadUrl, String.valueOf(resp.statusCode())
+            ));
+          }
+        })
+        .thenApply(this::unzipUpdates);
   }
 
-  private void downloadZip(Response resp, File outFile) throws IOException  {
-    long fileSize = resp.body().contentLength();
-    try (InputStream inputStream = resp.body().byteStream();
-         FileOutputStream outputStream = new FileOutputStream(outFile)) {
+  private File downloadZip(HttpResponse<InputStream> resp, File outFile, UpdateProgressMonitor monitor) {
+    try {
+      long fileSize = resp.headers().firstValueAsLong("content-length").orElse(-1);
+      LOG.info(String.format("Will download %d bytes and save as file %s", fileSize, outFile.getAbsolutePath()));
+      try (InputStream inputStream = resp.body();
+           OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outFile))) {
 
-      byte[] buffer = new byte[BUFFER_SIZE];
-      int bytesRead;
-      long totalBytesRead = 0;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int bytesRead;
+        long totalBytesRead = 0;
 
-      while ((bytesRead = inputStream.read(buffer)) != -1) {
-        outputStream.write(buffer, 0, bytesRead);
-        totalBytesRead += bytesRead;
-        int percentCompleted = (int) (totalBytesRead * 100 / fileSize);
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+          outputStream.write(buffer, 0, bytesRead);
+          totalBytesRead += bytesRead;
+          int percentCompleted = (int) (totalBytesRead * 100 / fileSize);
 
-        myUiFacade.reportProgress(percentCompleted);
+          monitor.progress(percentCompleted);
+        }
       }
+      return outFile;
+    } catch (IOException e) {
+      throw new CompletionException(e);
     }
   }
 
-  private void unzipUpdates(File updateFile) throws IOException {
-    try (ZipInputStream zis = new ZipInputStream(new FileInputStream(updateFile.getAbsolutePath()))) {
-
-      File folder = myLayerDir;
-      if (!folder.exists()) {
-        if (!folder.mkdirs()) {
-          throw new IOException(String.format(
-              "Folder %s does not exist and failed to create", folder.getAbsolutePath()));
-        }
+  private File unzipUpdates(File updateFile) {
+    File folder = myLayerDir;
+    if (!folder.exists()) {
+      if (!folder.mkdirs()) {
+        throw new RuntimeException(String.format(
+            "Folder %s does not exist and failed to create", folder.getAbsolutePath()));
       }
+    }
 
+    Set<File> oldFiles = new HashSet<>(Arrays.asList(Objects.requireNonNullElse(folder.listFiles(), new File[0])));
+    try (ZipInputStream zis = new ZipInputStream(new FileInputStream(updateFile.getAbsolutePath()))) {
       ZipEntry zipEntry;
       while ((zipEntry = zis.getNextEntry()) != null) {
         String fileName = zipEntry.getName();
@@ -114,12 +114,25 @@ public class DownloadWorker {
           try (FileOutputStream fos = new FileOutputStream(newFile)) {
             copy(zis, fos);
           } catch (IOException e) {
-            throw new IOException(String.format(
+            throw new CompletionException(String.format(
                 "Failed to unzip entry %s", zipEntry.getName()), e);
           }
         }
         zis.closeEntry();
       }
+
+      Set<File> newFiles = new HashSet<>(Arrays.asList(folder.listFiles()));
+      newFiles.removeAll(oldFiles);
+      switch (newFiles.size()) {
+        case 0: throw new RuntimeException(String.format(
+            "Invalid update: no new files installed into %s", folder.getAbsolutePath()));
+        case 1: return newFiles.stream().findFirst().get();
+        default: throw new RuntimeException(String.format(
+            "Invalid update: too many new files installed into %s\n%s", folder.getAbsolutePath(), newFiles
+        ));
+      }
+    } catch (IOException e) {
+      throw new CompletionException(e);
     }
   }
 

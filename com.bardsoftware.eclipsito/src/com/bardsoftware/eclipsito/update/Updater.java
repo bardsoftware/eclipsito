@@ -5,50 +5,50 @@ import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * @author dbarashev@bardsoftware.com
  */
 public class Updater {
 
-  private final List<File> versionLayerRoots;
+  private final List<File> updateLayerStores;
 
-  public Updater(Collection<File> versionLayerRoots) {
-    assert versionLayerRoots != null && !versionLayerRoots.isEmpty(): "The list of version layer roots is supposed to be non-empty";
-    this.versionLayerRoots = new ArrayList(versionLayerRoots);
+  public Updater(Collection<File> updateLayerStores) {
+    assert updateLayerStores != null && !updateLayerStores.isEmpty(): "Empty list of update layer stores";
+    this.updateLayerStores = new ArrayList(updateLayerStores);
   }
 
-  public CompletableFuture<List<VersionLayerInfo>> fetchUpdates(String updateUrl) {
-    CompletableFuture<List<VersionLayerInfo>> result = new CompletableFuture<>();
-    new Thread(() -> {
-      OkHttpClient httpClient = new OkHttpClient();
-      Request req = new Request.Builder().url(updateUrl).build();
-      try (Response resp = httpClient.newCall(req).execute()) {
-        result.complete(parseUpdates(resp.body().string()));
-      } catch (IOException | JsonParserException e) {
-        result.completeExceptionally(e);
+  public CompletableFuture<List<UpdateMetadata>> getUpdateMetadata(String updateUrl) {
+    HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
+    HttpRequest req = HttpRequest.newBuilder().uri(URI.create(updateUrl)).build();
+    return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply(resp -> {
+      try {
+        return parseUpdates(resp.body());
+      } catch (JsonParserException e) {
+        throw new CompletionException(e);
       }
-    }).start();
-    return result;
+    });
   }
 
-  private List<VersionLayerInfo> parseUpdates(String json) throws JsonParserException {
-    List<VersionLayerInfo> result = new ArrayList<>();
+  private List<UpdateMetadata> parseUpdates(String json) throws JsonParserException {
+    List<UpdateMetadata> result = new ArrayList<>();
     JsonArray allUpdates = JsonParser.array().from(json);
     for (int i = 0; i < allUpdates.size(); i++) {
       JsonObject update = allUpdates.getObject(i);
       if (update.has("version") && update.has("url")) {
-        result.add(new VersionLayerInfo(
+        result.add(new UpdateMetadata(
             update.getString("version"),
             update.getString("url"),
             update.getString("description", "")
@@ -58,18 +58,14 @@ public class Updater {
     return result;
   }
 
-
-  public CompletableFuture<File> installUpdate(VersionLayerInfo versionLayer) throws IOException {
-    return new DownloadWorker(
-        progress -> System.out.println(String.format("Downloading update: %d%% done", progress)),
-        getVersionLayerDir(),
-        versionLayer.url
-    ).downloadUpdate();
+  public CompletableFuture<File> installUpdate(UpdateMetadata updateMetadata, UpdateProgressMonitor monitor) throws IOException {
+    DownloadWorker updateInstaller = new DownloadWorker(getUpdateLayerStore());
+    return updateInstaller.downloadUpdate(updateMetadata.url, monitor);
   }
 
-  private File getVersionLayerDir() throws IOException {
-    return this.versionLayerRoots.stream()
+  private File getUpdateLayerStore() throws IOException {
+    return this.updateLayerStores.stream()
         .filter(file -> file.exists() && file.isDirectory() && file.canWrite())
-        .findFirst().orElseThrow(() -> new IOException("Cannot find writable directory for installing new version"));
+        .findFirst().orElseThrow(() -> new IOException("Cannot find writable directory for installing update"));
   }
 }
