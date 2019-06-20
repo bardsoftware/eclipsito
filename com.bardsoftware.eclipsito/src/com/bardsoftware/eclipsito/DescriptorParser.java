@@ -7,8 +7,10 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.net.URL;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.logging.Level;
 
 class DescriptorParser {
@@ -23,23 +25,19 @@ class DescriptorParser {
     }
 
     static PluginDescriptor parse(File file) {
-        URL pluginDescriptorUrl = null;
-        PluginDescriptor result = null;
-        try {
-            pluginDescriptorUrl = file.toURL();
-            Launch.LOG.fine(String.format("[DescriptorParser] parse(): url=%s", pluginDescriptorUrl));
-            Element root = ourDocumentBuilder.parse(pluginDescriptorUrl.openStream()).getDocumentElement();
-            result = constructPluginDescriptor(root, pluginDescriptorUrl);
+        try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
+            Element root = ourDocumentBuilder.parse(input).getDocumentElement();
+            return constructPluginDescriptor(root, file);
         } catch (Exception e) {
-            Launch.LOG.log(Level.SEVERE, String.format("Failed to parse descriptor=%s. This plugin will be skipped.", pluginDescriptorUrl), e);
+            Launch.LOG.log(Level.SEVERE, String.format("Failed to parse descriptor=%s. This plugin will be skipped.", file), e);
+            return null;
         }
-        return result;
     }
 
-    private static PluginDescriptor constructPluginDescriptor(Element pluginElement, URL pluginDescriptorUrl) {
+    private static PluginDescriptor constructPluginDescriptor(Element pluginElement, File pluginDescriptorFile) {
         PluginDescriptor result = null;
         if (pluginElement != null && PLUGIN.equals(pluginElement.getTagName())) {
-            result = new PluginDescriptor(pluginDescriptorUrl);
+            result = new PluginDescriptor(pluginDescriptorFile);
             handlePluginAttributes(pluginElement, result);
             handleRequiresElements(pluginElement.getElementsByTagName(PLUGIN_REQUIRES), result);
             handleRuntimeElements(pluginElement.getElementsByTagName(RUNTIME), result);
@@ -48,7 +46,7 @@ class DescriptorParser {
         } else {
             Launch.LOG.log(Level.WARNING, String.format(
                 "Invalid root tag=%s in descriptor=%s. This plugin will be skipped",
-                pluginElement.getTagName(), pluginDescriptorUrl));
+                pluginElement.getTagName(), pluginDescriptorFile.getAbsolutePath()));
         }
         return result;
     }
@@ -75,12 +73,12 @@ class DescriptorParser {
     private static void handleRequiresElements(NodeList requiresElements, PluginDescriptor pluginDescriptor) {
         if (requiresElements != null && requiresElements.getLength() != 0) {
             if (requiresElements.getLength() != 1) {
-                throw new IllegalArgumentException("There can be only one <requires> element in "+pluginDescriptor.myLocationUrl);
+                throw new IllegalArgumentException("There can be only one <requires> element in "+pluginDescriptor.getLocation());
             }
             Element element = (Element) requiresElements.item(0);
             NodeList imports = element.getElementsByTagName(PLUGIN_REQUIRES_IMPORT);
             if (imports == null || imports.getLength() < 1) {
-                throw new IllegalArgumentException("<requires> element must have 1+ <import> in "+pluginDescriptor.myLocationUrl);
+                throw new IllegalArgumentException("<requires> element must have 1+ <import> in "+pluginDescriptor.getLocation());
             }
             for (int i = 0; i < imports.getLength(); i++) {
                 Element imported = (Element) imports.item(i);
@@ -95,12 +93,12 @@ class DescriptorParser {
     private static void handleRuntimeElements(NodeList runtimeElements, PluginDescriptor pluginDescriptor) {
         if (runtimeElements != null && runtimeElements.getLength() != 0) {
             if (runtimeElements.getLength() != 1) {
-                throw new IllegalArgumentException("There can be only one <runtime> element in "+pluginDescriptor.myLocationUrl);
+                throw new IllegalArgumentException("There can be only one <runtime> element in "+pluginDescriptor.getLocation());
             }
             Element element = (Element) runtimeElements.item(0);
             NodeList libraries = element.getElementsByTagName(LIBRARY);
             if (libraries == null || libraries.getLength() < 1) {
-                throw new IllegalArgumentException("<runtime> element must have 1+ <library> in "+pluginDescriptor.myLocationUrl);
+                throw new IllegalArgumentException("<runtime> element must have 1+ <library> in "+pluginDescriptor.getLocation());
             }
             for (int i = 0; i < libraries.getLength(); i++) {
                 Element library = (Element) libraries.item(i);
@@ -155,7 +153,4 @@ class DescriptorParser {
     private static final String EXTENSION_NAME = "name"; //$NON-NLS-1$
     private static final String EXTENSION_ID = "id"; //$NON-NLS-1$
     private static final String EXTENSION_TARGET = "point"; //$NON-NLS-1$
-
-
-
 }

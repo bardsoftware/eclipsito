@@ -98,7 +98,7 @@ public class BundleImpl implements Bundle {
     }
 
     public String getLocation() {
-        return myDescriptor.myLocationUrl.getPath();
+        return myDescriptor.getUrl().getPath();
     }
 
     // class loading stuff
@@ -130,7 +130,7 @@ public class BundleImpl implements Bundle {
     public URL getEntry(String name) {
         URL result = null;
         try {
-            result = new URL(myDescriptor.myLocationUrl, name);
+            result = new URL(myDescriptor.getUrl(), name);
         } catch (MalformedURLException e) {
             Launch.LOG.log(Level.WARNING, e.getMessage(), e);
         }
@@ -184,7 +184,7 @@ public class BundleImpl implements Bundle {
             if (dependencyBundle != null) {
                 result.addParent(dependencyBundle);
             } else {
-                Launch.LOG.log(Level.WARNING, "There is wrong dependency for "+descriptor.myLocationUrl);
+                Launch.LOG.log(Level.WARNING, "There is wrong dependency for "+descriptor.getLocation());
             }
         }
         return result;

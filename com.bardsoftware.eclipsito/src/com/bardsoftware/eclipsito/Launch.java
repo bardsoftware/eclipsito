@@ -106,7 +106,7 @@ public class Launch {
     try (BareFormatter formatter = new BareFormatter()) {
       LOG.info("We will run with the following plugins:");
       uniqueDescriptors.forEach((key, descriptor) -> {
-        LOG.info(String.format("%s at %s", key, descriptor.myLocationUrl));
+        LOG.info(String.format("%s at %s", key, descriptor.getLocation()));
       });
     }
     Updater updater = new Updater(updateLayerStores);

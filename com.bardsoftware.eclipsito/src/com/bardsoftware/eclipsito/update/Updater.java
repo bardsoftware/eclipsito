@@ -1,6 +1,7 @@
 // Copyright (C) 2019 BarD Software
 package com.bardsoftware.eclipsito.update;
 
+import com.bardsoftware.eclipsito.Launch;
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
@@ -14,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -35,7 +37,14 @@ public class Updater {
     HttpRequest req = HttpRequest.newBuilder().uri(URI.create(updateUrl)).build();
     return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply(resp -> {
       try {
-        return parseUpdates(resp.body());
+        if (resp.statusCode() == 200) {
+          return parseUpdates(resp.body());
+        } else {
+          Launch.LOG.warning(String.format(
+              "Received HTTP %d when requesting updates from %s", resp.statusCode() ,updateUrl
+          ));
+          return Collections.emptyList();
+        }
       } catch (JsonParserException e) {
         throw new CompletionException(e);
       }

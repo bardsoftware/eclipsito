@@ -10,7 +10,7 @@ public class DependencyResolver {
 
     private final MarkedDescriptor[] myMarkedDescriptors;
 
-    public DependencyResolver(PluginDescriptor[] descriptors) {
+    DependencyResolver(PluginDescriptor[] descriptors) {
         if (descriptors == null) {
             throw new IllegalArgumentException("Cannot resolve null descriptors");
         }
@@ -20,7 +20,7 @@ public class DependencyResolver {
         }
     }
 
-    public PluginDescriptor[] resolveAll() {
+    PluginDescriptor[] resolveAll() {
         ArrayList result = new ArrayList();
         for (int i=0; i<myMarkedDescriptors.length; i++) {
             markAndSweep(myMarkedDescriptors[i]);
@@ -30,7 +30,7 @@ public class DependencyResolver {
                 result.add(myMarkedDescriptors[i].myDescriptor);
             }
         }
-        return (PluginDescriptor[]) result.toArray(new PluginDescriptor[result.size()]);
+        return (PluginDescriptor[]) result.toArray(new PluginDescriptor[0]);
     }
 
     private boolean markAndSweep(MarkedDescriptor marked) {
@@ -44,18 +44,24 @@ public class DependencyResolver {
             marked.mark();
             String[] children = marked.myDescriptor.getRequiredPluginIds();
             boolean allChildrenResolved = true;
-            for (int i=0; children != null && i<children.length; i++) {
-                MarkedDescriptor child = getMarkedById(children[i]);
+            for (String requiredPluginId : children) {
+                MarkedDescriptor child = getMarkedById(requiredPluginId);
                 if (child == null) {
-                    Launch.LOG.log(Level.WARNING, "Found unknown required plugin "+children[i]+
-                            ",\n    please, correct "+marked.myDescriptor.myLocationUrl.getPath()+
-                            ",\n    plugin "+marked.myDescriptor.getId()+" is ignored!");
+                    Launch.LOG.log(Level.SEVERE,
+                        String.format("Plugin %s which is required by %s not found. Plugin %s will be ignored",
+                            requiredPluginId,
+                            marked.myDescriptor.getId(),
+                            marked.myDescriptor.getLocation()
+                        ));
                     allChildrenResolved = false;
                     break;
                 } else if (!markAndSweep(child)) {
-                    Launch.LOG.log(Level.WARNING, "Found dependency cycle plugin "+children[i]+
-                            ",\n    please, correct "+marked.myDescriptor.myLocationUrl.getPath()+
-                    		",\n    plugin "+marked.myDescriptor.getId()+" is ignored!");
+                    Launch.LOG.log(Level.SEVERE,
+                        String.format("It seems that dependency on plugin %s from plugin %s makes a cycle. Plugin %s will be ignored",
+                            requiredPluginId,
+                            marked.myDescriptor.getId(),
+                            marked.myDescriptor.getLocation()
+                        ));
                     allChildrenResolved = false;
                     break;
                 }
@@ -91,7 +97,7 @@ public class DependencyResolver {
                 }
             }
         }
-        return (PluginDescriptor[]) result.toArray(new PluginDescriptor[result.size()]);
+        return (PluginDescriptor[]) result.toArray(new PluginDescriptor[0]);
     }
 
     protected static class MarkedDescriptor {
@@ -99,27 +105,27 @@ public class DependencyResolver {
         private static byte MARKED = 1;
         private static byte RESOLVED = 2;
 
-        public final PluginDescriptor myDescriptor;
+        final PluginDescriptor myDescriptor;
         private byte myState;
 
-        public MarkedDescriptor(PluginDescriptor descriptor) {
+        MarkedDescriptor(PluginDescriptor descriptor) {
             myDescriptor = descriptor;
             myState = INIT;
         }
 
-        public void mark() {
+        void mark() {
             myState = MARKED;
         }
 
-        public void resolve() {
+        void resolve() {
             myState = RESOLVED;
         }
 
-        public boolean isMarked() {
+        boolean isMarked() {
             return myState == MARKED;
         }
 
-        public boolean isResolved() {
+        boolean isResolved() {
             return myState == RESOLVED;
         }
 

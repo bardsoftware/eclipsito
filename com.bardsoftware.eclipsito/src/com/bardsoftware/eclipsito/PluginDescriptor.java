@@ -6,35 +6,37 @@ import org.w3c.dom.NodeList;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 
 public class PluginDescriptor {
 
-    public final URL myLocationUrl;
-
+    private final File myFile;
+    private final String myLocationUrl;
     private String myId;
     private String myName;
     private String myVersion;
     private String myProviderName;
     private String myClassName;
 
-    private ArrayList/*<URL>*/ myRuntimeLibraries = new ArrayList/*<URL>*/();
-    private ArrayList/*<String>*/ myRequiredPlugins = new ArrayList/*<String>*/();
-    private ArrayList/*<IExtension>*/ myExtensions = new ArrayList/*<IExtension>*/();
-    private ArrayList/*<ExtensionPointDescriptor>*/ myExtensionPoints = new ArrayList/*<ExtensionPointDescriptor>*/();
+    private List<URL> myRuntimeLibraries = new ArrayList<>();
+    private List<String> myRequiredPlugins = new ArrayList<>();
+    private List<IExtension> myExtensions = new ArrayList<>();
+    private List<ExtensionPointDescriptor> myExtensionPoints = new ArrayList<>();
 
-    protected PluginDescriptor(URL pluginDescriptorUrl) {
-        myLocationUrl = pluginDescriptorUrl;
+    protected PluginDescriptor(File pluginDescriptorFile) {
+        myFile = pluginDescriptorFile;
+        myLocationUrl = myFile.getAbsolutePath();
     }
 
-    String getLocation() {
-        return String.valueOf(myLocationUrl);
+    public String getLocation() {
+        return myLocationUrl;
     }
     public String getId() {
         return myId;
@@ -73,7 +75,7 @@ public class PluginDescriptor {
         return myClassName;
     }
 
-    protected void setClassName(String className) {
+    void setClassName(String className) {
         myClassName = className;
     }
 
@@ -81,15 +83,15 @@ public class PluginDescriptor {
         return myProviderName;
     }
 
-    protected void setProviderName(String providerName) {
+    void setProviderName(String providerName) {
         myProviderName = providerName;
     }
 
     public String[] getRequiredPluginIds() {
-        return (String[]) myRequiredPlugins.toArray(new String[myRequiredPlugins.size()]);
+        return myRequiredPlugins.toArray(new String[myRequiredPlugins.size()]);
     }
 
-    protected void addRequiredPluginId(String requiredPlugin) {
+    void addRequiredPluginId(String requiredPlugin) {
         if (requiredPlugin == null) {
             throw new IllegalArgumentException("Required plugin attribute cannot be null, please, correct "+myLocationUrl);
         }
@@ -97,22 +99,20 @@ public class PluginDescriptor {
     }
 
     public URL[] getRuntimeLibraries() {
-        return (URL[]) myRuntimeLibraries.toArray(new URL[myRuntimeLibraries.size()]);
+        return myRuntimeLibraries.toArray(new URL[0]);
     }
 
-    protected void addRuntimeLibrary(String template) {
+    void addRuntimeLibrary(String template) {
         if (template.endsWith("*")) {
             Path parent = Paths.get(template.substring(0, template.length()-1));
             try {
-                File descriptorDir = new File(myLocationUrl.toURI()).getParentFile();
+                File descriptorDir = myFile.getParentFile();
                 File templateDir = new File(descriptorDir, parent.toString());
                 if (templateDir.exists() && templateDir.isDirectory()) {
                     for (File lib : templateDir.listFiles()) {
-                        myRuntimeLibraries.add(lib.toURL());
+                        myRuntimeLibraries.add(lib.toURI().toURL());
                     }
                 }
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
@@ -121,14 +121,14 @@ public class PluginDescriptor {
             doAddRuntimeLibrary(template);
         }
     }
-    protected void doAddRuntimeLibrary(String relativePath) {
+    private void doAddRuntimeLibrary(String relativePath) {
         if (relativePath == null) {
             throw new IllegalArgumentException("Runtime library name attribute cannot be null, please, correct "+myLocationUrl);
         }
 
         URL url;
         try {
-            url = new URL(myLocationUrl, relativePath);
+            url = myFile.toURI().resolve(relativePath).toURL();
             myRuntimeLibraries.add(url);
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
@@ -143,10 +143,10 @@ public class PluginDescriptor {
     }
 
     public ExtensionPointDescriptor[] getExtensionPointDescriptors() {
-        return (ExtensionPointDescriptor[]) myExtensionPoints.toArray(new ExtensionPointDescriptor[myExtensionPoints.size()]);
+        return myExtensionPoints.toArray(new ExtensionPointDescriptor[myExtensionPoints.size()]);
     }
 
-    protected void addExtensionPointDescriptor(String name, String label, String schemaReference) {
+    void addExtensionPointDescriptor(String name, String label, String schemaReference) {
         if (name == null || label == null) {
             throw new IllegalArgumentException("Extension point id and name cannot be null, please, correct "+myLocationUrl);
         }
@@ -154,10 +154,10 @@ public class PluginDescriptor {
     }
 
     public IExtension[] getExtensions() {
-        return (IExtension[]) myExtensions.toArray(new IExtension[myExtensions.size()]);
+        return myExtensions.toArray(new IExtension[myExtensions.size()]);
     }
 
-    protected void addExtension(String id, String label, String extensionPointId, NodeList configurationTags) {
+    void addExtension(String id, String label, String extensionPointId, NodeList configurationTags) {
         if (extensionPointId == null) {
             throw new IllegalArgumentException("Extension's point attribute cannot be null, please, correct "+myLocationUrl);
         }
@@ -170,6 +170,15 @@ public class PluginDescriptor {
         return "plugin descriptor: id="+myId+" name="+myName+" version="+myVersion+" class="+myClassName+
                " required="+myRequiredPlugins+" runtime="+myRuntimeLibraries+" extensions="+myExtensions+
                " extension-points="+myExtensionPoints;
+    }
+
+    public URL getUrl() {
+        try {
+            return myFile.toURI().toURL();
+        } catch (MalformedURLException e) {
+            Launch.LOG.log(Level.SEVERE, String.format("Descriptor in %s produces malformed URL", myFile.getAbsolutePath()), e);
+            throw new RuntimeException(e);
+        }
     }
 
     public static class ExtensionPointDescriptor {

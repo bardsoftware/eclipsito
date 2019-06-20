@@ -21,7 +21,6 @@ public class BundleClassLoader extends URLClassLoader {
 
     public BundleClassLoader(URL[] defaultUrls, ClassLoader mainParent) {
         super(new URL[0], mainParent);
-        //System.err.println("[BundleClassLoader] BundleClassLoader(): urls="+Arrays.asList(defaultUrls));
         for (int i=0; i<defaultUrls.length; i++) {
             URL next = defaultUrls[i];
             if (next.getProtocol().equals(PACKED_JAR) && next.getFile().endsWith(".jar")) {
@@ -31,9 +30,6 @@ public class BundleClassLoader extends URLClassLoader {
                 super.addURL(next);
             }
         }
-//        for (int i=0; defaultUrls != null && i<defaultUrls.length; i++) {
-//            exploreTimestampsIn(new File(defaultUrls[i].getFile()));
-//        }
     }
 
     protected URL unpackJar(URL packedJarUrl) {
@@ -58,7 +54,7 @@ public class BundleClassLoader extends URLClassLoader {
             saveStream(in,file);
 
             //FileUtils.saveStreamToFile(in, file);
-            return file.toURL();
+            return file.toURI().toURL();
 
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
