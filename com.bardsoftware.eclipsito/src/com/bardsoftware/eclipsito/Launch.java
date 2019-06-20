@@ -109,7 +109,7 @@ public class Launch {
         LOG.info(String.format("%s at %s", key, descriptor.getLocation()));
       });
     }
-    Updater updater = new Updater(updateLayerStores);
+    Updater updater = new Updater(updateLayerStores, layer2dir.keySet());
     PlatformImpl platform = new PlatformImpl(updater);
     Runner runner = new Runner(platform);
     runner.run(

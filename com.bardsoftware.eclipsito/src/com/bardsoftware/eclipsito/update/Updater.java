@@ -17,8 +17,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 /**
  * @author dbarashev@bardsoftware.com
@@ -26,10 +28,12 @@ import java.util.concurrent.CompletionException;
 public class Updater {
 
   private final List<File> updateLayerStores;
+  private final Set<String> installedUpdateVersions;
 
-  public Updater(Collection<File> updateLayerStores) {
+  public Updater(Collection<File> updateLayerStores, Set<String> installedUpdateVersions) {
     assert updateLayerStores != null && !updateLayerStores.isEmpty(): "Empty list of update layer stores";
     this.updateLayerStores = new ArrayList(updateLayerStores);
+    this.installedUpdateVersions = installedUpdateVersions;
   }
 
   public CompletableFuture<List<UpdateMetadata>> getUpdateMetadata(String updateUrl) {
@@ -38,7 +42,8 @@ public class Updater {
     return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply(resp -> {
       try {
         if (resp.statusCode() == 200) {
-          return parseUpdates(resp.body());
+          return parseUpdates(resp.body())
+              .stream().filter(update -> !isInstalled(update)).collect(Collectors.toList());
         } else {
           Launch.LOG.warning(String.format(
               "Received HTTP %d when requesting updates from %s", resp.statusCode() ,updateUrl
@@ -70,6 +75,10 @@ public class Updater {
   public CompletableFuture<File> installUpdate(UpdateMetadata updateMetadata, UpdateProgressMonitor monitor) throws IOException {
     DownloadWorker updateInstaller = new DownloadWorker(getUpdateLayerStore());
     return updateInstaller.downloadUpdate(updateMetadata.url, monitor);
+  }
+
+  private boolean isInstalled(UpdateMetadata update) {
+    return this.installedUpdateVersions.contains(update.version);
   }
 
   private File getUpdateLayerStore() throws IOException {
