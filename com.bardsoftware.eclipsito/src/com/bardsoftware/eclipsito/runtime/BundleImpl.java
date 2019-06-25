@@ -104,18 +104,18 @@ public class BundleImpl implements Bundle {
     // class loading stuff
 
     public Class loadClass(String name) throws ClassNotFoundException {
-        BundleClassLoader loader = getClassLoader();
+        BundleClassLoader loader = getBundleClassLoader();
         return loader == null ? null : loader.loadClass(name);
     }
 
     public URL getResource(String name) {
-        BundleClassLoader loader = getClassLoader();
+        BundleClassLoader loader = getBundleClassLoader();
         return loader == null ? null : loader.getResource(name);
     }
 
     public void update() throws BundleException {
         throw new UnsupportedOperationException();
-//        if (getState() == ACTIVE && getClassLoader() != null && getClassLoader().isModified()) {
+//        if (getState() == ACTIVE && getBundleClassLoader() != null && getBundleClassLoader().isModified()) {
 //            stop();
 //            if (getState() == RESOLVED || getState() == INSTALLED) {
 //                myPluginInstance = null;
@@ -171,7 +171,7 @@ public class BundleImpl implements Bundle {
 
     //
 
-    protected BundleClassLoader getClassLoader() {
+    public BundleClassLoader getBundleClassLoader() {
         return myClassLoader;
     }
 

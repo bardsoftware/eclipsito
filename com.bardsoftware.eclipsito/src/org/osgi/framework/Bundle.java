@@ -726,4 +726,6 @@ public abstract interface Bundle
 	 * @since 1.3 <b>EXPERIMENTAL</b>
 	 */
 	public URL getEntry(String name);
+
+	ClassLoader getBundleClassLoader();
 }

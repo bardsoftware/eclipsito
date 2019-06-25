@@ -16,6 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -43,7 +44,10 @@ public class Updater {
       try {
         if (resp.statusCode() == 200) {
           return parseUpdates(resp.body())
-              .stream().filter(update -> !isInstalled(update)).collect(Collectors.toList());
+              .stream()
+              .filter(update -> !isInstalled(update))
+              .sorted(Comparator.reverseOrder())
+              .collect(Collectors.toList());
         } else {
           Launch.LOG.warning(String.format(
               "Received HTTP %d when requesting updates from %s", resp.statusCode() ,updateUrl
@@ -65,7 +69,9 @@ public class Updater {
         result.add(new UpdateMetadata(
             update.getString("version"),
             update.getString("url"),
-            update.getString("description", "")
+            update.getString("description", ""),
+            update.getString("date", ""),
+            update.getInt("size", -1)
         ));
       }
     }
