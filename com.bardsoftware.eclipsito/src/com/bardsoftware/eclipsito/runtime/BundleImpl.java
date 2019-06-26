@@ -215,5 +215,12 @@ public class BundleImpl implements Bundle {
         return new BundleClassLoader(urls, parent);
     }
 
-
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("BundleImpl{");
+        sb.append("myDescriptor=").append(myDescriptor);
+        sb.append(", myClassLoader=").append(myClassLoader);
+        sb.append('}');
+        return sb.toString();
+    }
 }
