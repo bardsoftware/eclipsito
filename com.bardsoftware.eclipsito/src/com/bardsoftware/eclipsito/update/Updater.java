@@ -83,6 +83,10 @@ public class Updater {
     return updateInstaller.downloadUpdate(updateMetadata.url, monitor);
   }
 
+  public Set<String> getInstalledUpdateVersions() {
+    return Set.copyOf(installedUpdateVersions);
+  }
+
   private boolean isInstalled(UpdateMetadata update) {
     return this.installedUpdateVersions.contains(update.version);
   }
