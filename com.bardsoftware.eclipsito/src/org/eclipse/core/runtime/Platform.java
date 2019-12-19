@@ -1,6 +1,6 @@
 package org.eclipse.core.runtime;
 
-import com.bardsoftware.eclipsito.update.Updater;
+import com.bardsoftware.eclipsito.update.UpdaterImpl;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.preferences.IPreferencesService;
 import org.osgi.framework.Bundle;
@@ -36,7 +36,7 @@ public abstract class Platform {
       return result;
   }
 
-  public static Updater getUpdater() { return ourInstance.geUpdaterImpl(); }
+  public static UpdaterImpl getUpdater() { return ourInstance.geUpdaterImpl(); }
 
 
   public static IJobManager getJobManager() {
@@ -59,6 +59,6 @@ public abstract class Platform {
   protected abstract Bundle getBundleImpl(String symbolicName);
   protected abstract IJobManager getJobManagerImpl();
   protected abstract IPreferencesService getPreferencesServiceImpl();
-  protected abstract Updater geUpdaterImpl();
+  protected abstract UpdaterImpl geUpdaterImpl();
 
 }

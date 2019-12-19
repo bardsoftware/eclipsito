@@ -13,7 +13,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.logging.Level;
 
-class DescriptorParser {
+public class DescriptorParser {
     private static DocumentBuilder ourDocumentBuilder;
 
     static {
@@ -24,7 +24,7 @@ class DescriptorParser {
         }
     }
 
-    static PluginDescriptor parse(File file) {
+    public static PluginDescriptor parse(File file) {
         try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
             Element root = ourDocumentBuilder.parse(input).getDocumentElement();
             return constructPluginDescriptor(root, file);

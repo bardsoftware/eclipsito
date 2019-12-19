@@ -3,7 +3,7 @@ package com.bardsoftware.eclipsito;
 
 import com.bardsoftware.eclipsito.runtime.PlatformImpl;
 import com.bardsoftware.eclipsito.runtime.Runner;
-import com.bardsoftware.eclipsito.update.Updater;
+import com.bardsoftware.eclipsito.update.UpdaterImpl;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
@@ -109,7 +109,7 @@ public class Launch {
         LOG.info(String.format("%s at %s", key, descriptor.getLocation()));
       });
     }
-    Updater updater = new Updater(updateLayerStores, layer2dir.keySet());
+    UpdaterImpl updater = new UpdaterImpl(updateLayerStores, layer2dir.keySet());
     PlatformImpl platform = new PlatformImpl(updater);
     Runner runner = new Runner(platform);
     runner.run(
