@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class BundleClassLoader extends URLClassLoader {
@@ -123,10 +124,14 @@ public class BundleClassLoader extends URLClassLoader {
         if (result == null) {
             // we use default URLClassLoader mechanism here to load.
             // if it is unable to find class, it will throw ClassNotFoundException
-            //System.err.println("[BundleClassLoader] findClass(): class="+name+"\nurls="+Arrays.asList(super.getURLs()));
+            //System.err.println("[BundleClassLoader] findClass(): class="+name+"\nurls="+ Arrays.asList(super.getURLs()));
             result = super.findClass(name);
         }
         return result;
     }
 
+    @Override
+    public String toString() {
+        return Arrays.asList(getURLs()).toString();
+    }
 }
