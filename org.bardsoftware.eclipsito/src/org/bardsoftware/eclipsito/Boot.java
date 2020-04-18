@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public abstract class Boot {
 
@@ -94,7 +96,11 @@ public abstract class Boot {
           String descriptorPattern;
           String implementationClass;
           if (options.containsKey("-verbose")) {
-            LOG.setLevel(Level.FINER);
+            LOG.setLevel(Level.FINEST);
+            FileHandler fileHandler = new FileHandler("/tmp/ganttproject-boot.log");
+            LOG.addHandler(fileHandler);
+            fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setLevel(Level.ALL);
           }
           if (options.containsKey("-plugins-res") || options.containsKey("-plugins-dir")) {
             application = options.get("-app");
@@ -132,7 +138,7 @@ public abstract class Boot {
           } else {
             String[] modulesDirArray = getModulesPaths(modulesDir);
             for (String dir : modulesDirArray) {
-              File modulesFile = new File(dir);
+              File modulesFile = new File(System.getProperty("user.dir"), dir);
               assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
               modulesFiles.add(modulesFile);
             }

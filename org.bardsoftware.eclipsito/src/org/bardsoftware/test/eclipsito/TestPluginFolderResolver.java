@@ -49,7 +49,7 @@ public class TestPluginFolderResolver extends TestsEclipsitoBase {
   }
 
   public void testSelectWithEmptyFolder() {
-    List<File> list = new ArrayList<>();
+    List<File> list = new ArrayList<File>();
     list.add(folder1);
     list.add(folder3);
 
@@ -60,7 +60,7 @@ public class TestPluginFolderResolver extends TestsEclipsitoBase {
   }
 
   public void testSelectOnlyEmptyFolders() {
-    List<File> list = new ArrayList<>();
+    List<File> list = new ArrayList<File>();
     list.add(folder3);
     list.add(folder3);
 
@@ -72,7 +72,7 @@ public class TestPluginFolderResolver extends TestsEclipsitoBase {
   }
 
   public void testNoFolders() {
-    File result = boot.getVersionDir(new ArrayList<>());
+    File result = boot.getVersionDir(new ArrayList<File>());
 
     assertNull(result);
   }
