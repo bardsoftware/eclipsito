@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -79,10 +80,14 @@ public class Launch {
     SortedMap<String, File> layer2dir = new TreeMap<>(Comparator.reverseOrder());
     getVersionLayerStoreDirs(args.versionDirs).forEach(file -> {
       if (!file.isDirectory()) {
-        die(String.format("Not a directory: %s", file));
+        if (!file.mkdirs()) {
+          LOG.warning(String.format("Layer store is no a directory and can't be created: %s", file));
+          return;
+        }
       }
       if (!file.canRead()) {
-        die(String.format("Cannot read directory: %s", file));
+        LOG.warning(String.format("Cannot read directory: %s", file));
+        return;
       }
       updateLayerStores.add(file);
       layer2dir.putAll(collectLayers(file));
@@ -121,7 +126,20 @@ public class Launch {
 
   private static List<File> getVersionLayerStoreDirs(String storeSpec) {
     return Arrays.stream(storeSpec.split(File.pathSeparator))
-        .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home")) : path)
+        .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home").replace("\\", "/")) : path)
+        .map(path -> {
+          if (!Paths.get(path).isAbsolute()) {
+            LOG.info(String.format("Path %s is not absolute. We'll try resolving it relative to user.dir=%s",
+                    path, System.getProperty("user.dir")));
+            File layerStoreDir = new File(System.getProperty("user.dir"), path);
+            if (layerStoreDir.isDirectory() && layerStoreDir.canRead()) {
+              path = layerStoreDir.getAbsolutePath();
+            } else {
+              LOG.warning(String.format("Can't resolve path %s as a readable directory. Skipping it.", layerStoreDir.getAbsolutePath()));
+            }
+          }
+          return path.replace("/", File.separator);
+        })
         .map(File::new)
         .collect(Collectors.toList());
   }
