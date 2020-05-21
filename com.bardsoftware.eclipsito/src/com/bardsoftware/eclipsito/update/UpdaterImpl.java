@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,7 +94,14 @@ public class UpdaterImpl implements Updater{
 
   private File getUpdateLayerStore() throws IOException {
     return this.updateLayerStores.stream()
-        .filter(file -> file.exists() && file.isDirectory() && file.canWrite())
+        .filter(UpdaterImpl::isWritableDirectory)
         .findFirst().orElseThrow(() -> new IOException("Cannot find writable directory for installing update"));
+  }
+
+  private static boolean isWritableDirectory(File dir) {
+    // dbarashev: Apparently on some systems a directory may be reported as "canWrite" while actually
+    // forbidding creating new directories inside. I observed this on Win 8.1 with C:\Program Files (x86)\GanttProject-2.99
+    // So we use Files.isWritable as suggested here: https://bugs.openjdk.java.net/browse/JDK-8148211
+    return dir.exists() && dir.isDirectory() && dir.canWrite() && Files.isWritable(dir.toPath());
   }
 }
