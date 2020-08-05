@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -50,13 +51,16 @@ public class UpdaterImpl implements Updater{
               .collect(Collectors.toList());
         } else {
           Launch.LOG.warning(String.format(
-              "Received HTTP %d when requesting updates from %s", resp.statusCode() ,updateUrl
+              "Received HTTP %d when requesting updates from %s", resp.statusCode(), updateUrl
           ));
-          return Collections.emptyList();
+          return Collections.<UpdateMetadata>emptyList();
         }
       } catch (JsonParserException e) {
         throw new CompletionException(e);
       }
+    }).exceptionally(ex -> {
+      Launch.LOG.log(Level.SEVERE, String.format("Failed to fetch updates from %s", updateUrl), ex);
+      return Collections.emptyList();
     });
   }
 

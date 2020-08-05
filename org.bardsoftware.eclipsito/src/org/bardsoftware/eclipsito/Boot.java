@@ -138,7 +138,10 @@ public abstract class Boot {
           } else {
             String[] modulesDirArray = getModulesPaths(modulesDir);
             for (String dir : modulesDirArray) {
-              File modulesFile = new File(System.getProperty("user.dir"), dir);
+              File modulesFile = new File(dir);
+            if (!modulesFile.isAbsolute()) {
+                modulesFile = new File(System.getProperty("user.dir"), dir);
+              }
               assert modulesFile.isDirectory() && modulesFile.canRead() : String.format("File %s is not a directory or is not readable", modulesFile.getAbsolutePath());
               modulesFiles.add(modulesFile);
             }
