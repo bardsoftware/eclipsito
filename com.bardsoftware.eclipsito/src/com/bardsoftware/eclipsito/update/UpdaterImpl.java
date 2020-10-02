@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -61,13 +63,16 @@ public class UpdaterImpl implements Updater{
               .collect(Collectors.toList());
         } else {
           Launch.LOG.warning(String.format(
-              "Received HTTP %d when requesting updates from %s", resp.statusCode() ,updateUrl
+              "Received HTTP %d when requesting updates from %s", resp.statusCode(), updateUrl
           ));
-          return Collections.emptyList();
+          return Collections.<UpdateMetadata>emptyList();
         }
       } catch (JsonParserException e) {
         throw new CompletionException(e);
       }
+    }).exceptionally(ex -> {
+      Launch.LOG.log(Level.SEVERE, String.format("Failed to fetch updates from %s", updateUrl), ex);
+      return Collections.emptyList();
     });
   }
 
@@ -104,7 +109,14 @@ public class UpdaterImpl implements Updater{
 
   private File getUpdateLayerStore() throws IOException {
     return this.updateLayerStores.stream()
-        .filter(file -> file.exists() && file.isDirectory() && file.canWrite())
+        .filter(UpdaterImpl::isWritableDirectory)
         .findFirst().orElseThrow(() -> new IOException("Cannot find writable directory for installing update"));
+  }
+
+  private static boolean isWritableDirectory(File dir) {
+    // dbarashev: Apparently on some systems a directory may be reported as "canWrite" while actually
+    // forbidding creating new directories inside. I observed this on Win 8.1 with C:\Program Files (x86)\GanttProject-2.99
+    // So we use Files.isWritable as suggested here: https://bugs.openjdk.java.net/browse/JDK-8148211
+    return dir.exists() && dir.isDirectory() && dir.canWrite() && Files.isWritable(dir.toPath());
   }
 }

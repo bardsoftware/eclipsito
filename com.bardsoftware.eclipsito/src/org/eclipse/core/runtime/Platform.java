@@ -36,7 +36,7 @@ public abstract class Platform {
       return result;
   }
 
-  public static UpdaterImpl getUpdater() { return ourInstance.geUpdaterImpl(); }
+  public static UpdaterImpl getUpdater() { return (ourInstance == null) ? null : ourInstance.geUpdaterImpl(); }
 
 
   public static IJobManager getJobManager() {
