@@ -58,6 +58,12 @@ public class PlatformImpl extends Platform {
         }
     }
 
+    @Override
+    protected void restartImpl() {
+        this.stop();
+
+    }
+
     // method implements org.eclipse.core.runtime.Platform.getExtensionRegistry()
     protected IExtensionRegistry getExtensionRegistryImpl() {
         return myExtensionRegistry;

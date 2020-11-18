@@ -36,6 +36,12 @@ public abstract class Platform {
       return result;
   }
 
+  public static void restart() {
+    if (ourInstance != null) {
+      ourInstance.restartImpl();
+    }
+  }
+
   public static UpdaterImpl getUpdater() { return (ourInstance == null) ? null : ourInstance.geUpdaterImpl(); }
 
 
@@ -60,5 +66,5 @@ public abstract class Platform {
   protected abstract IJobManager getJobManagerImpl();
   protected abstract IPreferencesService getPreferencesServiceImpl();
   protected abstract UpdaterImpl geUpdaterImpl();
-
+  protected abstract void restartImpl();
 }
