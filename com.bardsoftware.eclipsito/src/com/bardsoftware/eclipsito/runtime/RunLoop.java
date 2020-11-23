@@ -21,6 +21,7 @@ public class RunLoop {
   private final Args cmdLine;
   private ExecutorService executor = Executors.newSingleThreadExecutor(r -> new Thread(topThreadGroup, r, "GanttProject Runner"));
   private Runner currentRunner;
+  private Future<?> currentRun;
 
   public RunLoop(Args args) {
     this.cmdLine = args;
@@ -29,14 +30,22 @@ public class RunLoop {
 
   public void start() {
     ModuleRuntime moduleRuntime = ModuleRuntime.build(this.cmdLine);
-    PlatformImpl platform = new PlatformImpl(moduleRuntime.updater);
-    Future<?> currentRun = this.executor.submit(new Runner(
+    PlatformImpl platform = new PlatformImpl(moduleRuntime.updater, () -> {
+      RunLoop.this.restart();
+    });
+    this.currentRun = this.executor.submit(new Runner(
         platform,
         moduleRuntime.effectiveRuntime,
         this.cmdLine.app,
         this.cmdLine.appArgs.toArray(new String[0])
     ));
+  }
 
+  private void restart() {
+    if (currentRun != null) {
+      currentRun.cancel(true);
+    }
+    start();
   }
 
   private class ShutdownHook extends Thread {
