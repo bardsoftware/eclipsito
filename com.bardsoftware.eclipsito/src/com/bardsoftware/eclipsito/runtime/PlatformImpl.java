@@ -18,12 +18,14 @@ import java.util.logging.Level;
 
 public class PlatformImpl extends Platform {
     private final UpdaterImpl updater;
+    private final Runnable restarter;
     private IExtensionRegistry myExtensionRegistry;
     private Bundle[] myBundles;
 
-    public PlatformImpl(UpdaterImpl updater) {
+    public PlatformImpl(UpdaterImpl updater, Runnable restarter) {
         setInstance(this);
         this.updater = updater;
+        this.restarter = restarter;
     }
 
     protected void setup(PluginDescriptor[] descriptors) {
@@ -56,6 +58,12 @@ public class PlatformImpl extends Platform {
                 Launch.LOG.log(Level.WARNING, e.getMessage(), e);
             }
         }
+    }
+
+    @Override
+    protected void restartImpl() {
+        this.stop();
+        this.restarter.run();
     }
 
     // method implements org.eclipse.core.runtime.Platform.getExtensionRegistry()
