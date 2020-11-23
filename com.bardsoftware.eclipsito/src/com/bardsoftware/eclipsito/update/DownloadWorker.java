@@ -35,18 +35,31 @@ public class DownloadWorker {
     myLayerDir = layerDir;
   }
 
-  CompletableFuture<File> downloadUpdate(String downloadUrl, UpdateProgressMonitor monitor) throws IOException {
+  CompletableFuture<File> downloadUpdate(
+      UpdateMetadata metadata,
+      UpdateProgressMonitor monitor,
+      UpdateIntegrityChecker integrityChecker) throws IOException {
+    String downloadUrl = metadata.url;
     HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
     HttpRequest req = HttpRequest.newBuilder().uri(URI.create(downloadUrl)).build();
     File tempFile = File.createTempFile("ganttproject-update", "zip");
     return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofInputStream())
         .thenApply(resp -> {
           if (resp.statusCode() == 200) {
-            return downloadZip(resp, tempFile, monitor);
+            // If the HTTP request has completed successfully, we save the ZIP file and run the
+            // integrity check. Otherwise we terminate exceptionally and report the status code.
+            File zipFile = downloadZip(resp, tempFile, monitor);
+            if (integrityChecker.verify(zipFile)) {
+              return zipFile;
+            } else {
+              throw new RuntimeException(String.format(
+                 "Update %s failed to pass the integrity check.", metadata.version
+              ));
+            }
           } else {
             throw new RuntimeException(String.format(
-                "Cannot download update from %s. Server responds with %s",
-                downloadUrl, String.valueOf(resp.statusCode())
+                "Cannot download update from %s. Server responded with HTTP %s",
+                downloadUrl, resp.statusCode()
             ));
           }
         })

@@ -87,16 +87,20 @@ public class UpdaterImpl implements Updater{
             update.getString("url"),
             update.getString("description", ""),
             update.getString("date", ""),
-            update.getInt("size", -1)
+            update.getInt("size", -1),
+            update.getString("signature", "")
         ));
       }
     }
     return result;
   }
 
-  public CompletableFuture<File> installUpdate(UpdateMetadata updateMetadata, UpdateProgressMonitor monitor) throws IOException {
+  public CompletableFuture<File> installUpdate(
+      UpdateMetadata updateMetadata,
+      UpdateProgressMonitor monitor,
+      UpdateIntegrityChecker integrityChecker) throws IOException {
     DownloadWorker updateInstaller = new DownloadWorker(getUpdateLayerStore());
-    return updateInstaller.downloadUpdate(updateMetadata.url, monitor);
+    return updateInstaller.downloadUpdate(updateMetadata, monitor, integrityChecker);
   }
 
   public Set<String> getInstalledUpdateVersions() {

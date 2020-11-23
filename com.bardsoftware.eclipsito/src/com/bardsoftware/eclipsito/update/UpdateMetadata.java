@@ -10,13 +10,16 @@ public class UpdateMetadata implements Comparable<UpdateMetadata> {
   public final String description;
   public final String date;
   public final int sizeBytes;
+  public final String signatureBody;
+  public final String signatureMethod = "";
 
-  public UpdateMetadata(String version, String url, String description, String date, int sizeBytes) {
+  public UpdateMetadata(String version, String url, String description, String date, int sizeBytes, String signatureBody) {
     this.version = version;
     this.url = url;
     this.description = description;
     this.date = date;
     this.sizeBytes = sizeBytes;
+    this.signatureBody = signatureBody;
   }
 
   @Override
