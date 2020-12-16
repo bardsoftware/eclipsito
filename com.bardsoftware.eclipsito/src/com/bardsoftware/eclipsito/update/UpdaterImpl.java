@@ -43,11 +43,11 @@ public class UpdaterImpl implements Updater{
   public CompletableFuture<List<UpdateMetadata>> getUpdateMetadata(String updateUrl) {
     HttpClient httpClient = HttpClient.newBuilder()
         .followRedirects(HttpClient.Redirect.ALWAYS)
-        .connectTimeout(Duration.ofSeconds(10))
+        .connectTimeout(Duration.ofSeconds(30))
         .build();
     HttpRequest req = HttpRequest.newBuilder()
         .uri(URI.create(updateUrl))
-        .timeout(Duration.ofSeconds(10))
+        .timeout(Duration.ofSeconds(30))
         .header("User-Agent", String.format("GanttProject %s; Java %s; %s",
             getInstalledUpdateVersions().stream().max(String::compareTo).orElse("?"),
             System.getProperty("java.runtime.version"),

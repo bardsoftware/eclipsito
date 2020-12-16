@@ -21,6 +21,9 @@ sourceSets {
             srcDirs = ['src']
             include '**/*.java'
         }
+        resources {
+            srcDirs = ['resources']
+        }
     }
 }
 
