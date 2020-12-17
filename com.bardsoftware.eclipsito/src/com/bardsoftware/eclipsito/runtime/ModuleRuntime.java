@@ -78,9 +78,9 @@ public class ModuleRuntime {
     });
 
     try (BareFormatter formatter = new BareFormatter()) {
-      LOG.info("We will run with the following plugins:::");
+      LOG.fine("We will run with the following plugins:");
       uniqueDescriptors.forEach((key, descriptor) -> {
-        LOG.info(String.format("%s at %s", key, descriptor.getLocation()));
+        LOG.fine(String.format("%s at %s", key, descriptor.getLocation()));
       });
     }
     return new ModuleRuntime(uniqueDescriptors.values(), new UpdaterImpl(updateLayerStores, layer2dir.keySet()));
@@ -88,16 +88,19 @@ public class ModuleRuntime {
 
   private static List<File> getVersionLayerStoreDirs(String storeSpec) {
     return Arrays.stream(storeSpec.split(File.pathSeparator))
-        .map(path -> path.startsWith("~/") ? path.replaceFirst("~", System.getProperty("user.home").replace("\\", "/")) : path)
+        .map(path -> path.startsWith("~/")
+            ? path.replaceFirst("~", System.getProperty("user.home").replace("\\", "/"))
+            : path)
         .map(path -> {
           if (!Paths.get(path).isAbsolute()) {
-            LOG.info(String.format("Path %s is not absolute. We'll try resolving it relative to user.dir=%s",
+            LOG.fine(String.format("Path `%s` is not absolute. We'll try resolving it relative to user.dir=%s",
                 path, System.getProperty("user.dir")));
             File layerStoreDir = new File(System.getProperty("user.dir"), path);
             if (layerStoreDir.isDirectory() && layerStoreDir.canRead()) {
               path = layerStoreDir.getAbsolutePath();
             } else {
-              LOG.warning(String.format("Can't resolve path %s as a readable directory. Skipping it.", layerStoreDir.getAbsolutePath()));
+              LOG.warning(String.format("Can't resolve path %s as a readable directory. Skipping it.",
+                  layerStoreDir.getAbsolutePath()));
             }
           }
           return path.replace("/", File.separator);

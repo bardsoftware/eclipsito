@@ -4,6 +4,7 @@ package com.bardsoftware.eclipsito;
 import com.bardsoftware.eclipsito.runtime.RunLoop;
 import com.beust.jcommander.JCommander;
 
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,6 +22,11 @@ public class Launch {
       parser.usage();
       System.exit(0);
     }
+
+    var handler = new ConsoleHandler();
+    LOG.addHandler(handler);
+    handler.setLevel(Level.ALL);
+    handler.setFormatter(new java.util.logging.SimpleFormatter());
 
     switch(args.verbosity) {
       case 0: LOG.setLevel(Level.OFF); break;
