@@ -12,7 +12,7 @@ public class UpdateMetadata implements Comparable<UpdateMetadata> {
   public final int sizeBytes;
   public final String signatureBody;
   public final String signatureMethod = "";
-  public final boolean isMajorUpdate = false;
+  public final boolean isMajorUpdate;
 
   public UpdateMetadata(String version, String url, String description, String date, int sizeBytes, String signatureBody, boolean isMajorUpdate) {
     this.version = version;
@@ -21,6 +21,7 @@ public class UpdateMetadata implements Comparable<UpdateMetadata> {
     this.date = date;
     this.sizeBytes = sizeBytes;
     this.signatureBody = signatureBody;
+    this.isMajorUpdate = isMajorUpdate;
   }
 
   @Override
