@@ -88,7 +88,8 @@ public class UpdaterImpl implements Updater{
             update.getString("description", ""),
             update.getString("date", ""),
             update.getInt("size", -1),
-            update.getString("signature", "")
+            update.getString("signature", ""),
+            update.getBoolean("isMajor", false)
         ));
       }
     }

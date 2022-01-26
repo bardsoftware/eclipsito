@@ -12,8 +12,9 @@ public class UpdateMetadata implements Comparable<UpdateMetadata> {
   public final int sizeBytes;
   public final String signatureBody;
   public final String signatureMethod = "";
+  public final boolean isMajorUpdate = false;
 
-  public UpdateMetadata(String version, String url, String description, String date, int sizeBytes, String signatureBody) {
+  public UpdateMetadata(String version, String url, String description, String date, int sizeBytes, String signatureBody, boolean isMajorUpdate) {
     this.version = version;
     this.url = url;
     this.description = description;
