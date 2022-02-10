@@ -5,7 +5,6 @@ mainClassName='com.bardsoftware.eclipsito.Launch'
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {

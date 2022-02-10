@@ -4,6 +4,7 @@ package com.bardsoftware.eclipsito;
 import com.bardsoftware.eclipsito.runtime.RunLoop;
 import com.beust.jcommander.JCommander;
 
+import java.util.Objects;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +23,9 @@ public class Launch {
       parser.usage();
       System.exit(0);
     }
+
+    args.versionDirs = Objects.requireNonNullElse(args.versionDirs, System.getProperty("versionDirs"));
+    args.app = Objects.requireNonNullElse(args.app, System.getProperty("app"));
 
     var handler = new ConsoleHandler();
     LOG.addHandler(handler);

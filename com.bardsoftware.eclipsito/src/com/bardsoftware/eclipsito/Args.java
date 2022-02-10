@@ -23,7 +23,7 @@ public class Args {
   String app;
 
   @Parameter(names = {"--verbosity", "-v"}, description = "Logging verbosity level 0+")
-  Integer verbosity = 2;
+  Integer verbosity = 4;
 
   @Parameter(names = "--help", help = true)
   boolean help;

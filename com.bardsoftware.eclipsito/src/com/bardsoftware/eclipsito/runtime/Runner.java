@@ -30,6 +30,7 @@ public class Runner implements Runnable {
     Launch.LOG.fine("Command line args: " + Arrays.asList(args));
     myPlatform.setup(plugins.toArray(new PluginDescriptor[0]));
     myPlatform.start();
+    Launch.LOG.fine("Launching application="+application);
     // after all bundles are started up, we can
     // launch an application which could use all supplied bundle services
     if (application != null && application.length() > 0) {
