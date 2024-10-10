@@ -12,4 +12,5 @@ import java.util.concurrent.CompletableFuture;
 public interface Updater {
   CompletableFuture<List<UpdateMetadata>> getUpdateMetadata(String updateUrl);
   CompletableFuture<File> installUpdate(UpdateMetadata updateMetadata, UpdateProgressMonitor monitor, UpdateIntegrityChecker integrityChecker) throws IOException;
+  CompletableFuture<File> installUpdate(File zipfile) throws IOException;
 }

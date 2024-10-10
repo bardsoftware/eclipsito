@@ -68,11 +68,15 @@ public class UpdaterImpl implements Updater{
           return Collections.<UpdateMetadata>emptyList();
         }
       } catch (JsonParserException e) {
-        throw new CompletionException(e);
+        throw new CompletionException(e.getMessage(), e);
       }
     }).exceptionally(ex -> {
       Launch.LOG.log(Level.SEVERE, String.format("Failed to fetch updates from %s", updateUrl), ex);
-      return Collections.emptyList();
+      if (ex instanceof java.net.ConnectException) {
+        throw new CompletionException(String.format("Can't connect to %s", updateUrl), ex);
+      } else {
+        throw new CompletionException(ex.getMessage(), ex);
+      }
     });
   }
 
@@ -102,6 +106,11 @@ public class UpdaterImpl implements Updater{
       UpdateIntegrityChecker integrityChecker) throws IOException {
     DownloadWorker updateInstaller = new DownloadWorker(getUpdateLayerStore());
     return updateInstaller.downloadUpdate(updateMetadata, monitor, integrityChecker);
+  }
+
+  public CompletableFuture<File> installUpdate(File zipfile) throws IOException {
+    var unzipper = new UpdateUnzipper(getUpdateLayerStore());
+    return CompletableFuture.completedFuture(unzipper.unzipUpdates(zipfile));
   }
 
   public Set<String> getInstalledUpdateVersions() {

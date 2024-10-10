@@ -17,18 +17,18 @@ public interface IPlatformRunnable {
 	/**
 	 * Exit object indicating normal termination
 	 */
-	public static final Integer EXIT_OK = new Integer(0);
+	public static final Integer EXIT_OK = 0;
 
 	/**
 	 * Exit object requesting platform restart
 	 */
-	public static final Integer EXIT_RESTART = new Integer(23);
+	public static final Integer EXIT_RESTART = 23;
 
 	/**
 	 * Exit object requesting that the command passed back be executed.  Typically
 	 * this is used to relaunch Eclipse with different command line arguments.
 	 */
-	public static final Integer EXIT_RELAUNCH = new Integer(24);
+	public static final Integer EXIT_RELAUNCH = 24;
 
 	/**
 	 * Runs this runnable with the given args and returns a result.
