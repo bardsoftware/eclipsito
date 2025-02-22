@@ -6,6 +6,7 @@ import com.bardsoftware.eclipsito.PluginDescriptor;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.logging.Level;
 
 /**
  * @author dbarashev@bardsoftware.com
@@ -33,8 +34,12 @@ public class Runner implements Runnable {
     Launch.LOG.fine("Launching application="+application);
     // after all bundles are started up, we can
     // launch an application which could use all supplied bundle services
-    if (application != null && application.length() > 0) {
-      ApplicationLauncher.launchApplication(application, args);
+    try {
+      if (application != null && application.length() > 0) {
+        ApplicationLauncher.launchApplication(application, args);
+      }
+    } catch (Throwable t) {
+      Launch.LOG.log(Level.SEVERE, "Failed to launch the application", t);
     }
   }
 
