@@ -144,7 +144,10 @@ public class ModuleRuntime {
 
     BareFormatter() {
       for (Handler h : LogManager.getLogManager().getLogger("").getHandlers()) {
-        handler2formatter.put(h, h.getFormatter());
+        var originalFormatter = h.getFormatter();
+        if (originalFormatter != null) {
+          handler2formatter.put(h, originalFormatter);
+        }
         h.setFormatter(new Formatter() {
           @Override
           public String format(LogRecord logRecord) {
